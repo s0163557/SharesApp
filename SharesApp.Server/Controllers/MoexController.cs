@@ -1,0 +1,223 @@
+﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Stock_Analysis_Web_App.Classes;
+using Stock_Analysis_Web_App.Classes.Converters;
+using Stock_Analysis_Web_App.Context;
+using Stock_Analysis_Web_App.Models;
+using Stock_Analysis_Web_App.Tools;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Net;
+using System.Text;
+
+namespace Stock_Analysis_Web_App.Controllers
+{
+    [ApiController]
+    [Route("[controller]")]
+    public class MoexController : ControllerBase
+    {
+        MoexHttpClient MoexClient;
+
+        HashSet<HttpStatusCode> _serverErrors = new HashSet<HttpStatusCode>
+        {
+            HttpStatusCode.InternalServerError,
+            HttpStatusCode.BadGateway,
+            HttpStatusCode.ServiceUnavailable,
+            HttpStatusCode.GatewayTimeout
+        };
+
+        public MoexController(MoexHttpClient MoexClient)
+        {
+            this.MoexClient = MoexClient;
+        }
+
+        [HttpPost("SaveSharesToDb")]
+        public void SendSharesToDb(List<MoexStockInfo> listOfInfos)
+        {
+            MoexToSecuritiesConverter converter = new MoexToSecuritiesConverter();
+            using SecuritiesDbContext dbContext = new SecuritiesDbContext();
+            {
+                var infosInDb = dbContext.SecurityInfos.Select(o => o.SecurityId).ToHashSet();
+                foreach (var info in listOfInfos)
+                {
+                    //Если в ДБ нет этой акции, то добавим её
+                    if (!infosInDb.Contains(info.SecId))
+                        dbContext.SecurityInfos.Add(converter.ConvertMoexStockInfoToSecurityInfo(info));
+                }
+            }
+            dbContext.SaveChanges();
+        }
+
+        [HttpGet("GetSharesFromIss")]
+        public async Task<List<MoexStockInfo>> GetListOfMoexStockInfos()
+        {
+            //Поскольку в запросе выдается не больше 100 штук за раз, нам надо последовательно их запрашивать, пока количество возвращенных не будет меньше 100.
+            int startIndex = 0;
+            List<MoexStockInfo> listOfAllShares = new List<MoexStockInfo>();
+            List<MoexStockInfo> listOfPartShares = new List<MoexStockInfo>();
+            HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.OK);
+            ResponseSerializer serializer = new();
+            do
+            {
+                int i = 0;
+                do
+                {
+                    if (i > 0)
+                    {
+                        //Если это не первая наша попытка обратиться - делаем небольшую паузу
+                        Thread.Sleep(500);
+                        if (i >= 5)
+                        {
+                            //Если уже долное время не можеи достучаться, то считаем сервер недоступным.
+                            throw new Exception("Невозможно подключиться к сервису ISS Московской биржи");
+                        }
+                    }
+                    response = await MoexClient.GetAsync(UrlQueryMaker.GetSharesCollectionUrl(startIndex));
+                    i++;
+                }
+                while (_serverErrors.TryGetValue(response.StatusCode, out var value));
+
+                listOfPartShares = await serializer.DeserializeList<MoexStockInfo>(response, "securities");
+                listOfAllShares.AddRange(listOfPartShares);
+                startIndex += listOfPartShares.Count;
+            }
+            while (listOfPartShares.Count > 0);
+
+            //Иногда ISS выдает двойные строки - нам стоит их удалить
+            HashSet<MoexStockInfo> visited = new HashSet<MoexStockInfo>();
+            for (int i = 0; i < listOfAllShares.Count(); i++)
+            {
+                if (!visited.Add(listOfAllShares[i]))
+                {
+                    i--;
+                    listOfAllShares.RemoveAt(i);
+                }
+            }
+
+            return listOfAllShares;
+        }
+
+        [HttpPost("SendListOfStocksToDb")]
+        public async Task<string> SendSecurityTradeRecordsToDb(List<MoexStockHistoryTrade> listOfStockHistoryTrades)
+        {
+            try
+            {
+                MoexToSecuritiesConverter moexToSecuritiesConverter = new MoexToSecuritiesConverter();
+                List<SecurityTradeRecord> listOfSecurityTradeRecords = new List<SecurityTradeRecord>();
+
+                using (SecuritiesDbContext securitiesDb = new SecuritiesDbContext())
+                {
+                    securitiesDb.SecurityInfos.Load();
+                    var infosDictioanry = securitiesDb.SecurityInfos
+                        .ToDictionary(key => key.SecurityId, val => val);
+                    foreach (var item in listOfStockHistoryTrades)
+                    {
+                        //Если акция есть - добавялем к ней запись о торгах
+                        if (infosDictioanry.TryGetValue(item.SecId, out SecurityInfo value))
+                            securitiesDb.SecurityTradeRecords.Add(moexToSecuritiesConverter.ConvertMoexStockHistoryTradeToSecurityHistoryTrade(value, item));
+                        else
+                        {
+                            //Если акции нет - создаем её запись
+                            var moexInfo = await GetStockInfoFromMoex(item.SecId);
+                            SecurityInfo securityInfo = moexToSecuritiesConverter.ConvertMoexStockInfoToSecurityInfo(moexInfo);
+                            securitiesDb.SecurityInfos.Add(securityInfo);
+                            securitiesDb.SecurityTradeRecords.Add(moexToSecuritiesConverter.ConvertMoexStockHistoryTradeToSecurityHistoryTrade(securityInfo, item));
+                            //Сохраним сейчас, чтобы случайно не добавить эту акцию во второй раз, если в выборке будут двойные строки
+                            securitiesDb.SaveChanges();
+                        }
+                    }
+                    securitiesDb.SaveChanges();
+                }
+                //Все прошло успешно, возвращаем True
+                return "Успешно сохранены";
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+
+        [HttpGet("BusinessLogick")]
+        public async Task<string> GetAndPostListOfStocks()
+        {
+            try
+            {
+                using (SecuritiesDbContext securitiesDb = new SecuritiesDbContext())
+                {
+                    securitiesDb.Database.EnsureDeleted();
+                    securitiesDb.Database.EnsureCreated();
+
+                    var list = await GetListOfMoexStockInfos();
+                    try
+                    {
+                        SendSharesToDb(list);
+                    }
+                    catch (Exception ex)
+                    {
+                        return ex.Message;
+                    }
+                    List<MoexStockHistoryTrade> listOfStocks = await GetStockHistoryTradesFromDate(new DateOnly(2025, 2, 3));
+                    return await SendSecurityTradeRecordsToDb(listOfStocks);
+                }
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+        }
+
+        private async Task<MoexStockInfo> GetStockInfoFromMoex(string secId)
+        {
+            HttpResponseMessage response =
+                await MoexClient.GetAsync(UrlQueryMaker.GetSecurityInfoUrl(secId));
+            ResponseSerializer responseSerializer = new();
+            MoexStockInfo stockInfo = await responseSerializer.DeserializeInfo<MoexStockInfo>(response, "description");
+            return stockInfo;
+        }
+
+        [HttpGet("GetStockHistoryTradesFromDate")]
+        public async Task<List<MoexStockHistoryTrade>> GetStockHistoryTradesFromDate(DateOnly dateOfTrade)
+        {
+            //Поскольку в запросе выдается не больше 100 штук за раз, нам надо последовательно их запрашивать, пока количество возвращенных не будет меньше 100.
+            int startIndex = 0;
+            List<MoexStockHistoryTrade> listOfAllStocks = new List<MoexStockHistoryTrade>();
+            List<MoexStockHistoryTrade> listOfPartStocks = new List<MoexStockHistoryTrade>();
+            HttpResponseMessage response = new HttpResponseMessage(HttpStatusCode.OK);
+            ResponseSerializer serializer = new();
+            do
+            {
+                int i = 0;
+                do
+                {
+                    if (i > 0)
+                    {
+                        //Если это не первая наша попытка обратиться - делаем небольшую паузу
+                        Thread.Sleep(500);
+                        if (i >= 5)
+                        {
+                            //Если уже долное время не можеи достучаться, то считаем сервер недоступным.
+                            throw new Exception("Невозможно подключиться к сервису ISS Московской биржи");
+                        }
+                    }
+                    response = await MoexClient.GetAsync(UrlQueryMaker.GetHistorySharesTradeInDateUrl(dateOfTrade, startIndex));
+                    i++;
+                }
+                while (_serverErrors.TryGetValue(response.StatusCode, out var value));
+
+                listOfPartStocks = await serializer.HttpResponseDeserializeToMoexStockHistoryTrade(response);
+                listOfAllStocks.AddRange(listOfPartStocks);
+                startIndex += listOfPartStocks.Count;
+            }
+            while (listOfPartStocks.Count > 0);
+            return listOfAllStocks;
+        }
+
+        [HttpPost]
+        public async Task<string> GetQuery(string query)
+        {
+            HttpResponseMessage response = await MoexClient.GetAsync(query);
+            return await response.Content.ReadAsStringAsync();
+        }
+
+    }
+}

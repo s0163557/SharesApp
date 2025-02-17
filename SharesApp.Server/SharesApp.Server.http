@@ -1,0 +1,5 @@
+@SharesApp.Server_HostAddress = http://localhost:5239
+
+GET {{SharesApp.Server_HostAddress}}/security/
+Accept: application/json
+###
