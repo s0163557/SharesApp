@@ -26,6 +26,8 @@ COPY . .
 WORKDIR "/src/SharesApp.Server"
 RUN dotnet build "./SharesApp.Server.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
+RUN mkdir -p ~/.aspnet/https
+
 # Этот этап используется для публикации проекта службы, который будет скопирован на последний этап
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
