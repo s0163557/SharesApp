@@ -21,5 +21,25 @@ namespace SharesApp.Server.Controllers
             }
         }
 
+        [HttpGet]
+        [Route("GetSecurity/{securityid}")]
+        public SecurityInfo? GetSecurityInfo(string securityid)
+        {
+            using (SecuritiesDbContext dbContext = new SecuritiesDbContext())
+            {
+                dbContext.SecurityInfos.Load();
+                try
+                {
+                    SecurityInfo securityInfo = dbContext.SecurityInfos.Where(x => x.SecurityId == securityid).First();
+                    return securityInfo;
+                }
+                catch (Exception ex)
+                {
+                    SecurityInfo sc = new SecurityInfo();
+                    return sc;
+                }
+            }
+        }
+
     }
 }
