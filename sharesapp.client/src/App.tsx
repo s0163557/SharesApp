@@ -35,6 +35,7 @@ function App() {
     return (
         <div>
             <h1 id="tableLabel">Table of shares</h1>
+            <div>CI/CD in its beauty</div>
             {securitiesContents}
         </div>
     );
