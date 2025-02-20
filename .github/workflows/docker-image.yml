@@ -35,4 +35,4 @@ jobs:
           context: .
           file: ./SharesApp.Server/Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/sharesapptoken:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/SharesAppImage:latest
