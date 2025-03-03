@@ -10,6 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@mui/styled-engine": "^6.4.6",
     "@mui/x-date-pickers": "^7.27.1",
     "dayjs": "^1.11.13",
     "react": "^19.0.0",
