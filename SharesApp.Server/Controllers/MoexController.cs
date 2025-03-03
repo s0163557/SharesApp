@@ -13,7 +13,7 @@ using System.Text;
 namespace Stock_Analysis_Web_App.Controllers
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("api/[controller]")]
     public class MoexController : ControllerBase
     {
         MoexHttpClient MoexClient;
@@ -108,13 +108,19 @@ namespace Stock_Analysis_Web_App.Controllers
                 using (SecuritiesDbContext securitiesDb = new SecuritiesDbContext())
                 {
                     securitiesDb.SecurityInfos.Load();
-                    var infosDictioanry = securitiesDb.SecurityInfos
+                    var infosDictionary = securitiesDb.SecurityInfos
                         .ToDictionary(key => key.SecurityId, val => val);
                     foreach (var item in listOfStockHistoryTrades)
                     {
                         //Если акция есть - добавялем к ней запись о торгах
-                        if (infosDictioanry.TryGetValue(item.SecId, out SecurityInfo value))
-                            securitiesDb.SecurityTradeRecords.Add(moexToSecuritiesConverter.ConvertMoexStockHistoryTradeToSecurityHistoryTrade(value, item));
+                        if (infosDictionary.TryGetValue(item.SecId, out SecurityInfo value))
+                        {
+                            //Проверим, что такой же записи уже нет в базе
+                            var sameTradeRecord = securitiesDb.SecurityTradeRecords.Include(tr => tr.DateOfTrade == item.TradeDate && tr.SecurityInfo == value).ToList();
+                            //Если такой же записи нет, то добавляем её
+                            if (sameTradeRecord.Count == 0)
+                                securitiesDb.SecurityTradeRecords.Add(moexToSecuritiesConverter.ConvertMoexStockHistoryTradeToSecurityHistoryTrade(value, item));
+                        }
                         else
                         {
                             //Если акции нет - создаем её запись
@@ -195,7 +201,7 @@ namespace Stock_Analysis_Web_App.Controllers
                         Thread.Sleep(500);
                         if (i >= 5)
                         {
-                            //Если уже долное время не можеи достучаться, то считаем сервер недоступным.
+                            //Если уже долгое время не можеи достучаться, то считаем сервер недоступным.
                             throw new Exception("Невозможно подключиться к сервису ISS Московской биржи");
                         }
                     }
@@ -217,6 +223,44 @@ namespace Stock_Analysis_Web_App.Controllers
         {
             HttpResponseMessage response = await MoexClient.GetAsync(query);
             return await response.Content.ReadAsStringAsync();
+        }
+
+        [HttpGet]
+        [Route("GetTradeRecordsInRangeOfDates")]
+        public async Task<string> GetTradeRecordsInRangeOfDates(DateOnly from, DateOnly to)
+        {
+            List<StringBuilder> listOfErrors = new List<StringBuilder>();
+
+            using (SecuritiesDbContext securitiesDb = new SecuritiesDbContext())
+            {
+                for (DateOnly currentDate = from; currentDate <= to; currentDate = currentDate.AddDays(1))
+                {
+                    try
+                    {
+                        List<MoexStockHistoryTrade> listOfStocks = await GetStockHistoryTradesFromDate(currentDate);
+                        //Если в выбранный день не было торгов, то вернется пустой массив. 
+                        if (listOfStocks.Count > 0)
+                            await SendSecurityTradeRecordsToDb(listOfStocks);
+                    }
+                    catch (Exception ex)
+                    {
+                        listOfErrors.Add(new StringBuilder("При загрузке от даты " + currentDate + " произошла ошибка:" + ex.Message));
+                    }
+                }
+            }
+
+            if (listOfErrors.Count == 0)
+                return "Выгрузка данных за промежуток прошла успешно.";
+            else
+            { 
+                StringBuilder resultstring = new StringBuilder();
+                foreach (StringBuilder error in listOfErrors)
+                { 
+                    resultstring.Append(error.ToString());
+                    resultstring.Append('\n');
+                }
+                return resultstring.ToString();
+            }
         }
 
     }

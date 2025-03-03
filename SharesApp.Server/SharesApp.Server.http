@@ -3,3 +3,7 @@
 GET {{SharesApp.Server_HostAddress}}/security/
 Accept: application/json
 ###
+
+GET {{SharesApp.Server_HostAddress}}/moex/
+Accept: application/json
+###

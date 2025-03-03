@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Builder;
 using Stock_Analysis_Web_App.Classes;
+using Stock_Analysis_Web_App.Controllers;
 
 internal class Program
 {
