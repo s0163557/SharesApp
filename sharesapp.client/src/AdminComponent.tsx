@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
@@ -7,6 +7,11 @@ import dayjs, { Dayjs } from 'dayjs';
 function AdminComponent() {
     const [fromDate, setFromDate] = useState<Dayjs>();
     const [toDate, setToDate] = useState<Dayjs>();
+
+    useEffect(() => {
+        setFromDate(dayjs("2010-11-01"))
+        setToDate(dayjs("2025-01-01"))
+    }, []);
 
     return (
         <div>

@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json.Linq;
 using Stock_Analysis_Web_App.Classes;
 using Stock_Analysis_Web_App.Classes.Converters;
 using Stock_Analysis_Web_App.Context;
@@ -107,19 +109,23 @@ namespace Stock_Analysis_Web_App.Controllers
 
                 using (SecuritiesDbContext securitiesDb = new SecuritiesDbContext())
                 {
-                    securitiesDb.SecurityInfos.Load();
-                    var infosDictionary = securitiesDb.SecurityInfos
-                        .ToDictionary(key => key.SecurityId, val => val);
-                    foreach (var item in listOfStockHistoryTrades)
+                    foreach (MoexStockHistoryTrade item in listOfStockHistoryTrades)
                     {
+                        //Если запись о торгах пустая - пропустим её
+                        if (item.Numtrades == 0)
+                            continue;
+
                         //Если акция есть - добавялем к ней запись о торгах
-                        if (infosDictionary.TryGetValue(item.SecId, out SecurityInfo value))
+                        SecurityInfo existingSecurity = null;
+                        if (securitiesDb.SecurityInfos.Any(si => si.SecurityId == item.SecId))
+                            existingSecurity = securitiesDb.SecurityInfos.First(si => si.SecurityId == item.SecId);
+
+                        if (existingSecurity != null)
                         {
-                            //Проверим, что такой же записи уже нет в базе
-                            var sameTradeRecord = securitiesDb.SecurityTradeRecords.Include(tr => tr.DateOfTrade == item.TradeDate && tr.SecurityInfo == value).ToList();
-                            //Если такой же записи нет, то добавляем её
-                            if (sameTradeRecord.Count == 0)
-                                securitiesDb.SecurityTradeRecords.Add(moexToSecuritiesConverter.ConvertMoexStockHistoryTradeToSecurityHistoryTrade(value, item));
+                            //Проверим, что такой же записи ещё нет в базе
+                            var listOfExistingItems = securitiesDb.SecurityTradeRecords.Where(tr => tr.DateOfTrade == item.TradeDate && tr.SecurityInfo == existingSecurity).ToList();
+                            if (!listOfExistingItems.Any())
+                                securitiesDb.SecurityTradeRecords.Add(moexToSecuritiesConverter.ConvertMoexStockHistoryTradeToSecurityHistoryTrade(existingSecurity, item));
                         }
                         else
                         {
@@ -131,6 +137,7 @@ namespace Stock_Analysis_Web_App.Controllers
                             //Сохраним сейчас, чтобы случайно не добавить эту акцию во второй раз, если в выборке будут двойные строки
                             securitiesDb.SaveChanges();
                         }
+
                     }
                     securitiesDb.SaveChanges();
                 }
@@ -231,31 +238,29 @@ namespace Stock_Analysis_Web_App.Controllers
         {
             List<StringBuilder> listOfErrors = new List<StringBuilder>();
 
-            using (SecuritiesDbContext securitiesDb = new SecuritiesDbContext())
+            for (DateOnly currentDate = from; currentDate <= to; currentDate = currentDate.AddDays(1))
             {
-                for (DateOnly currentDate = from; currentDate <= to; currentDate = currentDate.AddDays(1))
+                try
                 {
-                    try
-                    {
-                        List<MoexStockHistoryTrade> listOfStocks = await GetStockHistoryTradesFromDate(currentDate);
-                        //Если в выбранный день не было торгов, то вернется пустой массив. 
-                        if (listOfStocks.Count > 0)
-                            await SendSecurityTradeRecordsToDb(listOfStocks);
-                    }
-                    catch (Exception ex)
-                    {
-                        listOfErrors.Add(new StringBuilder("При загрузке от даты " + currentDate + " произошла ошибка:" + ex.Message));
-                    }
+                    List<MoexStockHistoryTrade> listOfStocks = await GetStockHistoryTradesFromDate(currentDate);
+                    //Если в выбранный день не было торгов, то вернется пустой массив. 
+                    if (listOfStocks.Count > 0)
+                        await SendSecurityTradeRecordsToDb(listOfStocks);
                 }
+                catch (Exception ex)
+                {
+                    listOfErrors.Add(new StringBuilder("При загрузке от даты " + currentDate + " произошла ошибка:" + ex.Message));
+                }
+
             }
 
             if (listOfErrors.Count == 0)
                 return "Выгрузка данных за промежуток прошла успешно.";
             else
-            { 
+            {
                 StringBuilder resultstring = new StringBuilder();
                 foreach (StringBuilder error in listOfErrors)
-                { 
+                {
                     resultstring.Append(error.ToString());
                     resultstring.Append('\n');
                 }

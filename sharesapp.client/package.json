@@ -15,8 +15,10 @@
     "@mui/material": "^6.4.6",
     "@mui/styled-engine": "^6.4.6",
     "@mui/x-date-pickers": "^7.27.1",
+    "apexcharts": "^4.5.0",
     "dayjs": "^1.11.13",
     "react": "^19.0.0",
+    "react-apexcharts": "^1.7.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.1.5"
   },
