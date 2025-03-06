@@ -8,17 +8,15 @@ function ShareComponent() {
     const params = useParams();
     const [security, setSecurity] = useState<Security>();
 
-    const [series, setSeries] = useState({
-        data: [{
-            x: new Date(1538778600000),
-            y: [6629.81, 6650.5, 6623.04, 6633.33]
-        },
-        {
-            x: new Date(1538780400000),
-            y: [6632.01, 6643.59, 6620, 6630.11]
-        },
-        ]
-    });
+    const [series, setSeries] = useState<Candlestics>();
+
+    interface Candlestics
+    {
+        data: {
+            x: Date,
+            y: number[]
+        } []
+    }
 
     const ApexChart = () => {
 
@@ -41,13 +39,21 @@ function ShareComponent() {
             }
         };
 
-        return (
+        const chart = series == undefined ?
+        <div>
+            Loading chart
+        </div>
+        :
             <div>
+
                 <div id="chart">
                     <ReactApexChart options={options} series={[series]} type="candlestick" height={350} />
                 </div>
                 <div id="html-dist"></div>
             </div>
+
+        return (
+            chart
         );
     }
 
@@ -75,6 +81,7 @@ function ShareComponent() {
             Component ID - {security.securityInfoId}
             component issue date - {security.issueDate.toString()}
 
+            
             <ApexChart />
            
         </div>

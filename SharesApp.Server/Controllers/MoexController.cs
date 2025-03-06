@@ -245,7 +245,33 @@ namespace Stock_Analysis_Web_App.Controllers
                     List<MoexStockHistoryTrade> listOfStocks = await GetStockHistoryTradesFromDate(currentDate);
                     //Если в выбранный день не было торгов, то вернется пустой массив. 
                     if (listOfStocks.Count > 0)
+                    {
+                        //По какой-то причине MOEX хранит данные о нескольких торгах по одной бумаге в один день, с разным закрытием и открытием.
+                        //Удалим те записи, у которых меньше объем торгов.
+                        for (int i = 0; i < listOfStocks.Count(); i++)
+                        {
+
+                            for (int j = i; j < listOfStocks.Count(); j++)
+                            {
+                                if (listOfStocks[i].SecId == listOfStocks[j].SecId)
+                                {
+                                    //Нашил повторяющуюся запись о торгах по акции.
+                                    if (listOfStocks[i].Numtrades < listOfStocks[j].Numtrades)
+                                    { 
+                                        //Если нашли больший элемент - меняем их местами
+                                        var swap = listOfStocks[i];
+                                        listOfStocks[i] = listOfStocks[j];
+                                        listOfStocks[j] = swap;
+                                    }
+                                    //Удаляем меньший элемент
+                                    listOfStocks.RemoveAt(j);
+                                }
+                            }
+                        }
+
+                        
                         await SendSecurityTradeRecordsToDb(listOfStocks);
+                    }
                 }
                 catch (Exception ex)
                 {
