@@ -2,10 +2,10 @@
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
+using SharesApp.Server.Context;
+using SharesApp.Server.Models;
 using Stock_Analysis_Web_App.Classes;
 using Stock_Analysis_Web_App.Classes.Converters;
-using Stock_Analysis_Web_App.Context;
-using Stock_Analysis_Web_App.Models;
 using Stock_Analysis_Web_App.Tools;
 using System.Linq;
 using System.Linq.Expressions;
@@ -37,7 +37,7 @@ namespace Stock_Analysis_Web_App.Controllers
         public void SendSharesToDb(List<MoexStockInfo> listOfInfos)
         {
             MoexToSecuritiesConverter converter = new MoexToSecuritiesConverter();
-            using SecuritiesDbContext dbContext = new SecuritiesDbContext();
+            using SecuritiesContext dbContext = new SecuritiesContext();
             {
                 var infosInDb = dbContext.SecurityInfos.Select(o => o.SecurityId).ToHashSet();
                 foreach (var info in listOfInfos)
@@ -107,7 +107,7 @@ namespace Stock_Analysis_Web_App.Controllers
                 MoexToSecuritiesConverter moexToSecuritiesConverter = new MoexToSecuritiesConverter();
                 List<SecurityTradeRecord> listOfSecurityTradeRecords = new List<SecurityTradeRecord>();
 
-                using (SecuritiesDbContext securitiesDb = new SecuritiesDbContext())
+                using (SecuritiesContext securitiesDb = new SecuritiesContext())
                 {
                     foreach (MoexStockHistoryTrade item in listOfStockHistoryTrades)
                     {
@@ -155,7 +155,7 @@ namespace Stock_Analysis_Web_App.Controllers
         {
             try
             {
-                using (SecuritiesDbContext securitiesDb = new SecuritiesDbContext())
+                using (SecuritiesContext securitiesDb = new SecuritiesContext())
                 {
                     securitiesDb.Database.EnsureDeleted();
                     securitiesDb.Database.EnsureCreated();

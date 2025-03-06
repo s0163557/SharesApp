@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Stock_Analysis_Web_App.Context;
-using Stock_Analysis_Web_App.Models;
+using SharesApp.Server.Context;
+using SharesApp.Server.Models;
 
 namespace SharesApp.Server.Controllers
 {
@@ -16,7 +16,7 @@ namespace SharesApp.Server.Controllers
         [Route("GetSecurities")]
         public List<SecurityInfo> GetListOfSecurities()
         {
-            using (SecuritiesDbContext dbContext = new SecuritiesDbContext())
+            using (SecuritiesContext dbContext = new SecuritiesContext())
             {
                 dbContext.SecurityInfos.Load();
                 return dbContext.SecurityInfos.Select(x => x).ToList();
@@ -27,7 +27,7 @@ namespace SharesApp.Server.Controllers
         [Route("GetSecurity/{securityid}")]
         public SecurityInfo? GetSecurityInfo(string securityid)
         {
-            using (SecuritiesDbContext dbContext = new SecuritiesDbContext())
+            using (SecuritiesContext dbContext = new SecuritiesContext())
             {
                 dbContext.SecurityInfos.Load();
                 try
@@ -45,24 +45,27 @@ namespace SharesApp.Server.Controllers
 
         [HttpGet]
         [Route("GetSecurityTradeRecords/{securityid}")]
-        public List<string> GetSecurityTradeRecords(string securityid)
+        public string GetSecurityTradeRecordsForChart(string securityid)
         {
-            using (SecuritiesDbContext dbContext = new SecuritiesDbContext())
+            using (SecuritiesContext dbContext = new SecuritiesContext())
             {
-                dbContext.SecurityTradeRecords.Load();
                 try
                 {
                     List<SecurityTradeRecord> securityTradeRecords = dbContext.SecurityTradeRecords.Where(x => x.SecurityInfo.SecurityId == securityid).ToList();
-                    List<string> serializedSecurityInfos = new List<string>();
-                    foreach (SecurityTradeRecord securityTradeRecord in securityTradeRecords)
-                    {
-                        serializedSecurityInfos.Add(JsonConvert.SerializeObject(securityTradeRecord));
-                    }
-                    return serializedSecurityInfos;
+
+                    var records = from record in securityTradeRecords
+                                  select new
+                                  {
+                                      x = record.DateOfTrade,
+                                      y = new List<double> { record.Open, record.High, record.Low, record.Close }
+                                  };
+
+
+                    return JsonConvert.SerializeObject(records, Formatting.Indented);
                 }
                 catch (Exception ex)
                 {
-                    return new List<string>();
+                    return "";
                 }
             }
         }

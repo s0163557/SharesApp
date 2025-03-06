@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams } from "react-router";
 import ReactApexChart from "react-apexcharts";
+import { ApexOptions } from "apexcharts";
 
 function ShareComponent() {
 
     const params = useParams();
     const [security, setSecurity] = useState<Security>();
+
     const [series, setSeries] = useState({
         data: [{
             x: new Date(1538778600000),
@@ -18,13 +20,31 @@ function ShareComponent() {
         ]
     });
 
-
     const ApexChart = () => {
+
+        const options: ApexOptions = {
+            chart: {
+                type: 'candlestick',
+                height: 350
+            },
+            title: {
+                text: 'CandleStick Chart',
+                align: 'left'
+            },
+            xaxis: {
+                type: 'datetime'
+            },
+            yaxis: {
+                tooltip: {
+                    enabled: true
+                }
+            }
+        };
 
         return (
             <div>
                 <div id="chart">
-                    <ReactApexChart series={[series]} type="candlestick" height={350} />
+                    <ReactApexChart options={options} series={[series]} type="candlestick" height={350} />
                 </div>
                 <div id="html-dist"></div>
             </div>
@@ -33,7 +53,6 @@ function ShareComponent() {
 
     useEffect(() => {
         GetSecurity();
-        FetchSecurityTradeRecords();
     }, []);
 
     interface Security {
@@ -57,23 +76,22 @@ function ShareComponent() {
             component issue date - {security.issueDate.toString()}
 
             <ApexChart />
+           
         </div>
 
     return (
         securityContent
     );
 
-    async function FetchSecurityTradeRecords() {
-        const response = await fetch('/api/Security/GetSecurityTradeRecords/' + params.secid);
-        const data = await response.json();
-        
-        setSeries(data);
-    }
-
     async function GetSecurity() {
-        const response = await fetch('/api/Security/GetSecurity/' + params.secid);
-        const data = await response.json();
+        let response = await fetch('/api/Security/GetSecurity/' + params.secid);
+        let data = await response.json();
         setSecurity(data);
+
+        response = await fetch('/api/Security/GetSecurityTradeRecords/' + params.secid);
+        data = await response.json();
+        const correctformat = {data:data}
+        setSeries(correctformat);
     }
 }
 

@@ -1,7 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
-using System.Runtime.InteropServices;
-using System.Security.AccessControl;
-using Stock_Analysis_Web_App.Models;
+﻿using SharesApp.Server.Models;
 
 namespace Stock_Analysis_Web_App.Classes.Converters
 {
