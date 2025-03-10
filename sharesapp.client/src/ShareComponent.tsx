@@ -10,12 +10,11 @@ function ShareComponent() {
 
     const [series, setSeries] = useState<Candlestics>();
 
-    interface Candlestics
-    {
+    interface Candlestics {
         data: {
             x: Date,
             y: number[]
-        } []
+        }[]
     }
 
     const ApexChart = () => {
@@ -39,21 +38,18 @@ function ShareComponent() {
             }
         };
 
-        const chart = series == undefined ?
-        <div>
-            Loading chart
-        </div>
-        :
-            <div>
-
-                <div id="chart">
-                    <ReactApexChart options={options} series={[series]} type="candlestick" height={350} />
-                </div>
-                <div id="html-dist"></div>
-            </div>
-
         return (
-            chart
+            series == undefined ?
+                <div>
+                    Loading chart
+                </div>
+                :
+                <div>
+                    <div id="chart" >
+                        <ReactApexChart options={options} series={[series]} type="candlestick" height={350} width={800} />
+                    </div>
+                    <div id="html-dist"></div>
+                </div>
         );
     }
 
@@ -71,23 +67,56 @@ function ShareComponent() {
         listLevel: number;
     }
 
+    const textWithMargins = (nameOfObject: string, valueOfobject: string) => {
+        return (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+                <div style={{
+                    textAlign: 'left',
+                    fontWeight: 'bold'
+                }}>
+                    {nameOfObject}
+                </div>
+
+                <div style={{
+                    textAlign: 'right'
+                }}>
+                    {valueOfobject}
+                </div>
+            </div>
+        )
+    }
+
+    const chart =
+        <ApexChart />
+
     const securityContent = security == undefined ?
         <div>
             Fetching data
         </div>
         :
         <div>
-            Component name - {security.securityId}
-            Component ID - {security.securityInfoId}
-            component issue date - {security.issueDate.toString()}
 
-            
-            <ApexChart />
-           
+            <h1>
+                {security.name}
+            </h1>
+
+            {chart}
+
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr 1fr', columnGap: 50, rowGap: 10 }}>
+
+                {textWithMargins('Share name', security.securityId)}
+                {textWithMargins('Share API ID', security.securityInfoId.toString())}
+                {textWithMargins('Share issue date', security.issueDate.toString())}
+                {textWithMargins('Share ISIN code', security.isin.toString())}
+
+            </div>
         </div>
 
     return (
-        securityContent
+        <div>
+            {securityContent}
+        </div>
     );
 
     async function GetSecurity() {
@@ -97,7 +126,7 @@ function ShareComponent() {
 
         response = await fetch('/api/Security/GetSecurityTradeRecords/' + params.secid);
         data = await response.json();
-        const correctformat = {data:data}
+        const correctformat = { data: data }
         setSeries(correctformat);
     }
 }
