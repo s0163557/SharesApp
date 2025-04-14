@@ -47,6 +47,9 @@ function ShareComponent() {
                 <div>
                     <div id="chart" >
                         <ReactApexChart options={options} series={[series]} type="candlestick" height={350} width={800} />
+                        <button>Week</button>
+                        <button>Month</button>
+                        <button>Year</button>
                     </div>
                     <div id="html-dist"></div>
                 </div>

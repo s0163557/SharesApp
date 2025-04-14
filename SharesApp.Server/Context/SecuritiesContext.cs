@@ -19,6 +19,7 @@ public partial class SecuritiesContext : DbContext
     public virtual DbSet<SecurityInfo> SecurityInfos { get; set; }
 
     public virtual DbSet<SecurityTradeRecord> SecurityTradeRecords { get; set; }
+    public virtual DbSet<SecurityTradeRecord> SecurityTradeRecordsByWeek { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see https://go.microsoft.com/fwlink/?LinkId=723263.
@@ -44,6 +45,25 @@ public partial class SecuritiesContext : DbContext
             entity.ToTable("security_trade_records");
 
             entity.HasIndex(e => e.SecurityInfoId, "IX_security_trade_records_security_info_id");
+
+            entity.Property(e => e.SecurityTradeRecordId).HasColumnName("security_trade_record_id");
+            entity.Property(e => e.Close).HasColumnName("close");
+            entity.Property(e => e.DateOfTrade).HasColumnName("date_of_trade");
+            entity.Property(e => e.High).HasColumnName("high");
+            entity.Property(e => e.Low).HasColumnName("low");
+            entity.Property(e => e.NumberOfTrades).HasColumnName("number_of_trades");
+            entity.Property(e => e.Open).HasColumnName("open");
+            entity.Property(e => e.SecurityInfoId).HasColumnName("security_info_id");
+            entity.Property(e => e.Value).HasColumnName("value");
+
+            entity.HasOne(d => d.SecurityInfo).WithMany(p => p.SecurityTradeRecords).HasForeignKey(d => d.SecurityInfoId);
+        });
+
+        modelBuilder.Entity<SecurityTradeRecord>(entity =>
+        {
+            entity.ToTable("security_trade_records_by_week");
+
+            entity.HasIndex(e => e.SecurityInfoId, "IX_security_trade_records_by_week_security_info_id");
 
             entity.Property(e => e.SecurityTradeRecordId).HasColumnName("security_trade_record_id");
             entity.Property(e => e.Close).HasColumnName("close");

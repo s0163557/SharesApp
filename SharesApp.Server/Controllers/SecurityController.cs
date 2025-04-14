@@ -70,5 +70,61 @@ namespace SharesApp.Server.Controllers
             }
         }
 
+        [HttpGet]
+        [Route("GetSecurityTradeRecordsInWeek/{securityid}")]
+        public string GetSecurityTradeRecordsForChartInMonth(string securityid)
+        {
+            using (SecuritiesContext dbContext = new SecuritiesContext())
+            {
+                try
+                {
+                    List<SecurityTradeRecord> securityTradeRecords = dbContext.SecurityTradeRecords.Where(x => 
+                    x.SecurityInfo.SecurityId == securityid &&
+                    x.DateOfTrade <= DateOnly.FromDateTime(DateTime.Now.AddMonths(-1))).ToList();
+
+                    var records = from record in securityTradeRecords
+                                  select new
+                                  {
+                                      x = record.DateOfTrade,
+                                      y = new List<double> { record.Open, record.High, record.Low, record.Close }
+                                  };
+
+                    return JsonConvert.SerializeObject(records, Formatting.Indented);
+                }
+                catch (Exception ex)
+                {
+                    return "";
+                }
+            }
+        }
+
+        [HttpGet]
+        [Route("GetSecurityTradeRecordsInYear/{securityid}")]
+        public string GetSecurityTradeRecordsForChartInYear(string securityid)
+        {
+            using (SecuritiesContext dbContext = new SecuritiesContext())
+            {
+                try
+                {
+                    List<SecurityTradeRecord> securityTradeRecords = dbContext.SecurityTradeRecords.Where(x =>
+                    x.SecurityInfo.SecurityId == securityid &&
+                    x.DateOfTrade <= DateOnly.FromDateTime(DateTime.Now.AddYears(-1))).ToList();
+
+                    var records = from record in securityTradeRecords
+                                  select new
+                                  {
+                                      x = record.DateOfTrade,
+                                      y = new List<double> { record.Open, record.High, record.Low, record.Close }
+                                  };
+
+                    return JsonConvert.SerializeObject(records, Formatting.Indented);
+                }
+                catch (Exception ex)
+                {
+                    return "";
+                }
+            }
+        }
+
     }
 }

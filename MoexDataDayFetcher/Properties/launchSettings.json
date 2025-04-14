@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "MoexDataDayFetcher": {
+      "commandName": "Project"
+    },
+    "Container (Dockerfile)": {
+      "commandName": "Docker"
+    }
+  }
+}

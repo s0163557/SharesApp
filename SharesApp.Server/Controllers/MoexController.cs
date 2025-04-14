@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
 using SharesApp.Server.Context;
 using SharesApp.Server.Models;
+using SharesApp.Server.Tools;
 using Stock_Analysis_Web_App.Classes;
 using Stock_Analysis_Web_App.Classes.Converters;
 using Stock_Analysis_Web_App.Tools;
@@ -246,30 +247,8 @@ namespace Stock_Analysis_Web_App.Controllers
                     //Если в выбранный день не было торгов, то вернется пустой массив. 
                     if (listOfStocks.Count > 0)
                     {
-                        //По какой-то причине MOEX хранит данные о нескольких торгах по одной бумаге в один день, с разным закрытием и открытием.
-                        //Удалим те записи, у которых меньше объем торгов.
-                        for (int i = 0; i < listOfStocks.Count(); i++)
-                        {
-
-                            for (int j = i; j < listOfStocks.Count(); j++)
-                            {
-                                if (listOfStocks[i].SecId == listOfStocks[j].SecId)
-                                {
-                                    //Нашил повторяющуюся запись о торгах по акции.
-                                    if (listOfStocks[i].Numtrades < listOfStocks[j].Numtrades)
-                                    { 
-                                        //Если нашли больший элемент - меняем их местами
-                                        var swap = listOfStocks[i];
-                                        listOfStocks[i] = listOfStocks[j];
-                                        listOfStocks[j] = swap;
-                                    }
-                                    //Удаляем меньший элемент
-                                    listOfStocks.RemoveAt(j);
-                                }
-                            }
-                        }
-
-                        
+                        listOfStocks = MoexStockDataHandler.DeleteDuplicateRows(listOfStocks);
+                        listOfStocks = MoexStockDataHandler.DeleteRowsWithZeroes(listOfStocks);
                         await SendSecurityTradeRecordsToDb(listOfStocks);
                     }
                 }
@@ -277,7 +256,6 @@ namespace Stock_Analysis_Web_App.Controllers
                 {
                     listOfErrors.Add(new StringBuilder("При загрузке от даты " + currentDate + " произошла ошибка:" + ex.Message));
                 }
-
             }
 
             if (listOfErrors.Count == 0)
@@ -292,6 +270,66 @@ namespace Stock_Analysis_Web_App.Controllers
                 }
                 return resultstring.ToString();
             }
+        }
+
+        [HttpGet]
+        [Route("GatherDataIRnange")]
+        public async Task<string> GatherDataInRange(int amountOfDaysInRange)
+        {
+            using (SecuritiesContext dbContext = new SecuritiesContext())
+            {
+                foreach (var securityInfo in dbContext.SecurityInfos)
+                {
+                    //Выберем все данные о торгах по конкретной акции.
+                    var listOfTrades = dbContext.SecurityTradeRecords.Where(x => x.SecurityInfoId == securityInfo.SecurityInfoId);
+
+                    //Пройдемся по всем данным и соберем их по неделям.
+                    List<List<SecurityTradeRecord>> securityTradeRecordByWeeks = new List<List<SecurityTradeRecord>>();
+                    List<SecurityTradeRecord> securityTradeRecordInWeek = new List<SecurityTradeRecord>();
+                    DateOnly endWeekDate = listOfTrades.First().DateOfTrade.AddDays(amountOfDaysInRange);
+                    foreach (var tradeRecord in listOfTrades)
+                    {
+                        if (tradeRecord.DateOfTrade < endWeekDate)
+                            securityTradeRecordInWeek.Add(tradeRecord);
+                        else
+                        {
+                            //Если даты стали больше, значит мы прошли уже все возможные торги на неделе, и надо переходить к подсчету следующей
+                            securityTradeRecordByWeeks.Add(securityTradeRecordInWeek);
+                            securityTradeRecordInWeek.Clear();
+                            endWeekDate = endWeekDate.AddDays(7);
+                        }
+                    }
+
+                    List<SecurityTradeRecord> newListOfWeekTrades = new List<SecurityTradeRecord>();
+                    //Собрали все данные по неделям, теперь сформируем на их основе новые данные.
+                    foreach (var week in securityTradeRecordByWeeks)
+                    {
+                        if (week.Count > 0)
+                        {
+                            SecurityTradeRecord securityTradeRecord = new SecurityTradeRecord();
+                            //найдем открывающие и закрывающие значения 
+                            securityTradeRecord.Open = week.First().Open;
+                            securityTradeRecord.Close = week.Last().Close;
+                            securityTradeRecord.Low = week.Min(x => x.Low);
+                            securityTradeRecord.High = week.Max(x => x.High);
+                            //Найдем начало недели, если вдруг первый день не совпадает с первым днём первой записи
+                            DateOnly dateTime = week.First().DateOfTrade;
+                            while (dateTime.DayOfWeek != endWeekDate.DayOfWeek)
+                                dateTime = dateTime.AddDays(-1);
+                            securityTradeRecord.DateOfTrade = dateTime;
+                            securityTradeRecord.NumberOfTrades = week.Sum(x => x.NumberOfTrades);
+                            securityTradeRecord.Value = week.Sum(x => x.Value);
+                            securityTradeRecord.SecurityInfo = week.First().SecurityInfo;
+                            securityTradeRecord.SecurityInfoId = week.First().SecurityInfoId;
+                            newListOfWeekTrades.Add(securityTradeRecord);
+                        }
+                    }
+
+                    dbContext.SecurityTradeRecordsByWeek.AddRange(newListOfWeekTrades);
+                    dbContext.SaveChanges();
+                }
+            }
+            return "Сохранение прошло успешно";
         }
 
     }
