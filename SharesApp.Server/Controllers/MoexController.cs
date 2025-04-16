@@ -333,7 +333,17 @@ namespace Stock_Analysis_Web_App.Controllers
                             newListOfWeekTrades.Add(securityTradeRecord);
                         }
                     }
-                    dbContext.SecurityTradeRecordsByWeek.AddRange(newListOfWeekTrades);
+                    foreach (var record in newListOfWeekTrades)
+                    {
+                        var existingItem = dbContext.SecurityTradeRecordsByWeek.FirstOrDefault(x => x.DateOfTrade == record.DateOfTrade &&
+                                                                                            x.SecurityInfo == record.SecurityInfo);
+                        //Если нашли старые совпадающие записи, то удалим, и накатнем поверх новые.
+                        if (existingItem != null)
+                            dbContext.SecurityTradeRecordsByWeek.Remove(existingItem);
+
+                        dbContext.SecurityTradeRecordsByWeek.Add(record);
+                    }
+
                     dbContext.SaveChanges();
                 }
             }
