@@ -273,40 +273,49 @@ namespace Stock_Analysis_Web_App.Controllers
         }
 
         [HttpGet]
-        [Route("GatherDataIRnange")]
-        public async Task<string> GatherDataInRange(int amountOfDaysInRange)
+        [Route("GatherDataByWeek")]
+        public async Task<string> GatherDataByWeek()
         {
             using (SecuritiesContext dbContext = new SecuritiesContext())
             {
-                foreach (var securityInfo in dbContext.SecurityInfos)
+                var securityInfos = dbContext.SecurityInfos.ToList();
+                foreach (var securityInfo in securityInfos)
                 {
                     //Выберем все данные о торгах по конкретной акции.
-                    var listOfTrades = dbContext.SecurityTradeRecords.Where(x => x.SecurityInfoId == securityInfo.SecurityInfoId);
+                    var listOfTrades = dbContext.SecurityTradeRecords.Where(x => x.SecurityInfoId == securityInfo.SecurityInfoId).OrderBy(x => x.DateOfTrade).ToList();
+
+                    if (listOfTrades.Count == 0)
+                        continue;
 
                     //Пройдемся по всем данным и соберем их по неделям.
                     List<List<SecurityTradeRecord>> securityTradeRecordByWeeks = new List<List<SecurityTradeRecord>>();
                     List<SecurityTradeRecord> securityTradeRecordInWeek = new List<SecurityTradeRecord>();
-                    DateOnly endWeekDate = listOfTrades.First().DateOfTrade.AddDays(amountOfDaysInRange);
-                    foreach (var tradeRecord in listOfTrades)
+                    DateOnly endWeekDate = listOfTrades.First().DateOfTrade.AddDays(7);
+                    for (int i = 0; i < listOfTrades.Count; i++)
                     {
-                        if (tradeRecord.DateOfTrade < endWeekDate)
-                            securityTradeRecordInWeek.Add(tradeRecord);
+                        if (listOfTrades[i].DateOfTrade < endWeekDate)
+                            securityTradeRecordInWeek.Add(listOfTrades[i]);
                         else
                         {
                             //Если даты стали больше, значит мы прошли уже все возможные торги на неделе, и надо переходить к подсчету следующей
                             securityTradeRecordByWeeks.Add(securityTradeRecordInWeek);
-                            securityTradeRecordInWeek.Clear();
+                            securityTradeRecordInWeek = new List<SecurityTradeRecord>();
+                            i--;
                             endWeekDate = endWeekDate.AddDays(7);
                         }
                     }
 
-                    List<SecurityTradeRecord> newListOfWeekTrades = new List<SecurityTradeRecord>();
+                    // Добавим данные последней недели
+                    if (securityTradeRecordInWeek.Count > 0)
+                        securityTradeRecordByWeeks.Add(securityTradeRecordInWeek);
+
+                    List<SecurityTradeRecordByWeek> newListOfWeekTrades = new List<SecurityTradeRecordByWeek>();
                     //Собрали все данные по неделям, теперь сформируем на их основе новые данные.
                     foreach (var week in securityTradeRecordByWeeks)
                     {
                         if (week.Count > 0)
                         {
-                            SecurityTradeRecord securityTradeRecord = new SecurityTradeRecord();
+                            SecurityTradeRecordByWeek securityTradeRecord = new SecurityTradeRecordByWeek();
                             //найдем открывающие и закрывающие значения 
                             securityTradeRecord.Open = week.First().Open;
                             securityTradeRecord.Close = week.Last().Close;
@@ -324,8 +333,87 @@ namespace Stock_Analysis_Web_App.Controllers
                             newListOfWeekTrades.Add(securityTradeRecord);
                         }
                     }
-
                     dbContext.SecurityTradeRecordsByWeek.AddRange(newListOfWeekTrades);
+                    dbContext.SaveChanges();
+                }
+            }
+            return "Сохранение прошло успешно";
+        }
+
+        [HttpGet]
+        [Route("GatherDataByMonth")]
+        public async Task<string> GatherDataByMonth()
+        {
+            using (SecuritiesContext dbContext = new SecuritiesContext())
+            {
+                var securityInfos = dbContext.SecurityInfos.ToList();
+                foreach (var securityInfo in securityInfos)
+                {
+                    //Выберем все данные о торгах по конкретной акции.
+                    var listOfTrades = dbContext.SecurityTradeRecords.Where(x => x.SecurityInfoId == securityInfo.SecurityInfoId).OrderBy(x => x.DateOfTrade).ToList();
+
+                    if (listOfTrades.Count == 0)
+                        continue;
+
+                    //Пройдемся по всем данным и соберем их по неделям.
+                    List<List<SecurityTradeRecord>> securityTradeRecordByMonths = new List<List<SecurityTradeRecord>>();
+                    List<SecurityTradeRecord> securityTradeRecordInWeek = new List<SecurityTradeRecord>();
+                    DateOnly firstDayOfMonthDate = listOfTrades.First().DateOfTrade;
+                    //Поставим день на первый день месяца
+                    firstDayOfMonthDate = firstDayOfMonthDate.AddDays(1 - firstDayOfMonthDate.Day);
+
+                    for (int i = 0; i < listOfTrades.Count; i++)
+                    {
+                        if (listOfTrades[i].DateOfTrade.Month == firstDayOfMonthDate.Month &&
+                            listOfTrades[i].DateOfTrade.Year == firstDayOfMonthDate.Year)
+                            securityTradeRecordInWeek.Add(listOfTrades[i]);
+                        else
+                        {
+                            //Если даты стали больше, значит мы прошли уже все возможные торги на неделе, и надо переходить к подсчету следующей
+                            securityTradeRecordByMonths.Add(securityTradeRecordInWeek);
+                            securityTradeRecordInWeek = new List<SecurityTradeRecord>();
+                            firstDayOfMonthDate = listOfTrades[i].DateOfTrade;
+                            firstDayOfMonthDate = firstDayOfMonthDate.AddDays(1 - firstDayOfMonthDate.Day);
+                            i--;
+                        }
+                    }
+
+                    // Добавим данные последнего месяца
+                    if (securityTradeRecordInWeek.Count > 0)
+                        securityTradeRecordByMonths.Add(securityTradeRecordInWeek);
+
+                    List<SecurityTradeRecordByMonth> newListOfMonthTrades = new List<SecurityTradeRecordByMonth>();
+                    //Собрали все данные по неделям, теперь сформируем на их основе новые данные.
+                    foreach (var month in securityTradeRecordByMonths)
+                    {
+                        if (month.Count > 0)
+                        {
+                            SecurityTradeRecordByMonth securityTradeRecord = new SecurityTradeRecordByMonth();
+                            //найдем открывающие и закрывающие значения 
+                            securityTradeRecord.Open = month.First().Open;
+                            securityTradeRecord.Close = month.Last().Close;
+                            securityTradeRecord.Low = month.Min(x => x.Low);
+                            securityTradeRecord.High = month.Max(x => x.High);
+                            //Поставим дату на начало месяца
+                            securityTradeRecord.DateOfTrade = month.First().DateOfTrade.AddDays(1 - month.First().DateOfTrade.Day);
+                            securityTradeRecord.NumberOfTrades = month.Sum(x => x.NumberOfTrades);
+                            securityTradeRecord.Value = month.Sum(x => x.Value);
+                            securityTradeRecord.SecurityInfo = month.First().SecurityInfo;
+                            securityTradeRecord.SecurityInfoId = month.First().SecurityInfoId;
+                            newListOfMonthTrades.Add(securityTradeRecord);
+                        }
+                    }
+
+                    foreach (var record in newListOfMonthTrades)
+                    {
+                        var existingItem = dbContext.SecurityTradeRecordsByMonth.First(x => x.DateOfTrade == record.DateOfTrade &&
+                                                                                            x.SecurityInfo == record.SecurityInfo);
+                        //Если нашли старые совпадающие записи, то удалим, и накатнем поверх новые.
+                        if (existingItem != null)
+                            dbContext.SecurityTradeRecordsByMonth.Remove(existingItem);
+
+                        dbContext.SecurityTradeRecordsByMonth.Add(record);
+                    }
                     dbContext.SaveChanges();
                 }
             }

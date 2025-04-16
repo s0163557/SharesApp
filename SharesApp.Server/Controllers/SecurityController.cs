@@ -71,16 +71,17 @@ namespace SharesApp.Server.Controllers
         }
 
         [HttpGet]
-        [Route("GetSecurityTradeRecordsInWeek/{securityid}")]
-        public string GetSecurityTradeRecordsForChartInMonth(string securityid)
+        [Route("GetSecurityTradeRecordsByDay/{securityid}")]
+        public string GetSecurityTradeRecordsByDay(string securityid)
         {
             using (SecuritiesContext dbContext = new SecuritiesContext())
             {
                 try
                 {
-                    List<SecurityTradeRecord> securityTradeRecords = dbContext.SecurityTradeRecords.Where(x => 
-                    x.SecurityInfo.SecurityId == securityid &&
-                    x.DateOfTrade <= DateOnly.FromDateTime(DateTime.Now.AddMonths(-1))).ToList();
+                    List<SecurityTradeRecord> securityTradeRecords = dbContext.SecurityTradeRecords.Where(x =>
+                    x.SecurityInfo.SecurityId == securityid).OrderBy(x => x.DateOfTrade).ToList();
+                    if (securityTradeRecords.Count > 30)
+                        securityTradeRecords = securityTradeRecords.TakeLast(30).ToList();
 
                     var records = from record in securityTradeRecords
                                   select new
@@ -99,16 +100,17 @@ namespace SharesApp.Server.Controllers
         }
 
         [HttpGet]
-        [Route("GetSecurityTradeRecordsInYear/{securityid}")]
-        public string GetSecurityTradeRecordsForChartInYear(string securityid)
+        [Route("GetSecurityTradeRecordsByWeek/{securityid}")]
+        public string GetSecurityTradeRecordsByWeek(string securityid)
         {
-            using (SecuritiesContext dbContext = new SecuritiesContext())
+            try
             {
-                try
+                DateOnly yearDelay = DateOnly.FromDateTime(DateTime.Now.AddYears(-1));
+                using (SecuritiesContext dbContext = new SecuritiesContext())
                 {
-                    List<SecurityTradeRecord> securityTradeRecords = dbContext.SecurityTradeRecords.Where(x =>
+                    List<SecurityTradeRecordByWeek> securityTradeRecords = dbContext.SecurityTradeRecordsByWeek.Where(x =>
                     x.SecurityInfo.SecurityId == securityid &&
-                    x.DateOfTrade <= DateOnly.FromDateTime(DateTime.Now.AddYears(-1))).ToList();
+                    x.DateOfTrade >= yearDelay).ToList();
 
                     var records = from record in securityTradeRecords
                                   select new
@@ -119,12 +121,42 @@ namespace SharesApp.Server.Controllers
 
                     return JsonConvert.SerializeObject(records, Formatting.Indented);
                 }
-                catch (Exception ex)
+            }
+            catch (Exception ex)
+            {
+                return "";
+            }
+
+        }
+
+        [HttpGet]
+        [Route("GetSecurityTradeRecordsByMonth/{securityid}")]
+        public string GetSecurityTradeRecordsByMonth(string securityid)
+        {
+            try
+            {
+                using (SecuritiesContext dbContext = new SecuritiesContext())
                 {
-                    return "";
+                    List<SecurityTradeRecordByMonth> securityTradeRecords = dbContext.SecurityTradeRecordsByMonth.Where(x =>
+                    x.SecurityInfo.SecurityId == securityid).ToList();
+
+                    var records = from record in securityTradeRecords
+                                  select new
+                                  {
+                                      x = record.DateOfTrade,
+                                      y = new List<double> { record.Open, record.High, record.Low, record.Close }
+                                  };
+
+                    return JsonConvert.SerializeObject(records, Formatting.Indented);
                 }
             }
+            catch (Exception ex)
+            {
+                return "";
+            }
+
         }
+
 
     }
 }

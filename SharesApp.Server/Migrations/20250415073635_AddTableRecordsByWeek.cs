@@ -7,29 +7,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace SharesApp.Server.Migrations
 {
     /// <inheritdoc />
-    public partial class SecuritiesByWeek : Migration
+    public partial class AddTableRecordsByWeek : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateTable(
-                name: "security_infos",
-                columns: table => new
-                {
-                    security_info_id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    security_id = table.Column<string>(type: "text", nullable: false),
-                    name = table.Column<string>(type: "text", nullable: true),
-                    isin = table.Column<string>(type: "text", nullable: true),
-                    issue_size = table.Column<long>(type: "bigint", nullable: false),
-                    issue_date = table.Column<DateOnly>(type: "date", nullable: false),
-                    list_level = table.Column<int>(type: "integer", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_security_infos", x => x.security_info_id);
-                });
-
             migrationBuilder.CreateTable(
                 name: "security_trade_records_by_week",
                 columns: table => new
@@ -60,11 +42,6 @@ namespace SharesApp.Server.Migrations
                 name: "IX_security_trade_records_by_week_security_info_id",
                 table: "security_trade_records_by_week",
                 column: "security_info_id");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_security_trade_records_security_info_id",
-                table: "security_trade_records_by_week",
-                column: "security_info_id");
         }
 
         /// <inheritdoc />
@@ -73,8 +50,6 @@ namespace SharesApp.Server.Migrations
             migrationBuilder.DropTable(
                 name: "security_trade_records_by_week");
 
-            migrationBuilder.DropTable(
-                name: "security_infos");
         }
     }
 }

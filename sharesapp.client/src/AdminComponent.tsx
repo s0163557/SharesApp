@@ -9,13 +9,13 @@ function AdminComponent() {
     const [toDate, setToDate] = useState<Dayjs>();
 
     useEffect(() => {
-        setFromDate(dayjs("2010-11-01"))
+        setFromDate(dayjs("2025-01-01"))
         setToDate(dayjs("2025-01-01"))
     }, []);
 
     return (
         <div>
-            <p>Collect trade data</p>
+            <h1>Collect trade data</h1>
 
             <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <DatePicker
@@ -33,6 +33,11 @@ function AdminComponent() {
                     onChange={(newToDate) => setToDate(dayjs(newToDate))} />
             </LocalizationProvider>
             <button onClick={gatherAndSendData}>Fetch Securities</button>
+
+            <h1>Gather data by time periods</h1>
+
+            <button onClick={gatherDataByWeeks}>Form securities by weeks</button>
+            <button onClick={gatherDataByMonths}>Form securities by months</button>
         </div>
     );
 
@@ -46,6 +51,19 @@ function AdminComponent() {
             params.append("to", toDate.format("YYYY-MM-DD").toString());
 
         const apiUrl = '/api/Moex/GetTradeRecordsInRangeOfDates?' + params;
+        const response = await fetch(apiUrl);
+        return response;
+    }
+
+    async function gatherDataByWeeks()
+    {
+        const apiUrl = '/api/Moex/GatherDataByWeek';
+        const response = await fetch(apiUrl);
+        return response;       
+    }
+
+    async function gatherDataByMonths() {
+        const apiUrl = '/api/Moex/GatherDataByMonth';
         const response = await fetch(apiUrl);
         return response;
     }

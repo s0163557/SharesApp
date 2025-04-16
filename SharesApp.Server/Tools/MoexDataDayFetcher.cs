@@ -7,11 +7,9 @@ namespace SharesApp.Server.Tools
     public class MoexDataDayFetcher
     {
         TimeSpan HoursMiliseconds24 = new TimeSpan(24, 0, 0);
-        MoexHttpClient _httpClient;
 
-        public MoexDataDayFetcher(MoexHttpClient httpClient)
+        public MoexDataDayFetcher()
         {
-            _httpClient = httpClient;
             DateTime fetchingTime = DateTime.Now.AddDays(1);
 
             //Поставим время на 1 час ночи
@@ -32,12 +30,16 @@ namespace SharesApp.Server.Tools
                 {
                     Debug.WriteLine("Ночное обновление данных за прошедший день");
                     Thread.Sleep(sleepTime);
-                    MoexController moexController = new MoexController(_httpClient);
-                    var listOfStocks = await moexController.GetStockHistoryTradesFromDate(DateOnly.FromDateTime(DateTime.Now.AddDays(-1)));
-                    listOfStocks = MoexStockDataHandler.DeleteDuplicateRows(listOfStocks);
-                    listOfStocks = MoexStockDataHandler.DeleteRowsWithZeroes(listOfStocks);
-                    await moexController.SendSecurityTradeRecordsToDb(listOfStocks);
-                    await FetchNewData(HoursMiliseconds24);
+                    using (MoexHttpClient httpClient = new MoexHttpClient())
+                    {
+                        MoexController moexController = new MoexController(httpClient);
+
+                        var listOfStocks = await moexController.GetStockHistoryTradesFromDate(DateOnly.FromDateTime(DateTime.Now.AddDays(-1)));
+                        listOfStocks = MoexStockDataHandler.DeleteDuplicateRows(listOfStocks);
+                        listOfStocks = MoexStockDataHandler.DeleteRowsWithZeroes(listOfStocks);
+                        await moexController.SendSecurityTradeRecordsToDb(listOfStocks);
+                        await FetchNewData(HoursMiliseconds24);
+                    }
                     Debug.WriteLine("Успешно сохранил данные");
                 }
                 catch (Exception ex)

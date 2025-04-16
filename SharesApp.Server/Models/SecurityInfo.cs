@@ -20,4 +20,6 @@ public partial class SecurityInfo
     public int ListLevel { get; set; }
 
     public virtual ICollection<SecurityTradeRecord> SecurityTradeRecords { get; set; } = new List<SecurityTradeRecord>();
+    public virtual ICollection<SecurityTradeRecordByWeek> SecurityTradeRecordsByWeek { get; set; } = new List<SecurityTradeRecordByWeek>();
+    public virtual ICollection<SecurityTradeRecordByMonth> SecurityTradeRecordsByMonth { get; set; } = new List<SecurityTradeRecordByMonth>();
 }
