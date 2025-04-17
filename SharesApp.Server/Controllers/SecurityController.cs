@@ -87,7 +87,7 @@ namespace SharesApp.Server.Controllers
                                   select new
                                   {
                                       x = record.DateOfTrade,
-                                      y = new List<double> { record.Open, record.High, record.Low, record.Close }
+                                      y = new List<double> { record.Open, record.High, record.Low, record.Close, record.NumberOfTrades }
                                   };
 
                     return JsonConvert.SerializeObject(records, Formatting.Indented);
@@ -116,7 +116,7 @@ namespace SharesApp.Server.Controllers
                                   select new
                                   {
                                       x = record.DateOfTrade,
-                                      y = new List<double> { record.Open, record.High, record.Low, record.Close }
+                                      y = new List<double> { record.Open, record.High, record.Low, record.Close, record.NumberOfTrades }
                                   };
 
                     return JsonConvert.SerializeObject(records, Formatting.Indented);
@@ -144,7 +144,7 @@ namespace SharesApp.Server.Controllers
                                   select new
                                   {
                                       x = record.DateOfTrade,
-                                      y = new List<double> { record.Open, record.High, record.Low, record.Close }
+                                      y = new List<double> { record.Open, record.High, record.Low, record.Close, record.NumberOfTrades }
                                   };
 
                     return JsonConvert.SerializeObject(records, Formatting.Indented);

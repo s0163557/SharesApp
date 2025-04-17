@@ -354,80 +354,87 @@ namespace Stock_Analysis_Web_App.Controllers
         [Route("GatherDataByMonth")]
         public async Task<string> GatherDataByMonth()
         {
-            using (SecuritiesContext dbContext = new SecuritiesContext())
+            try
             {
-                var securityInfos = dbContext.SecurityInfos.ToList();
-                foreach (var securityInfo in securityInfos)
+                using (SecuritiesContext dbContext = new SecuritiesContext())
                 {
-                    //Выберем все данные о торгах по конкретной акции.
-                    var listOfTrades = dbContext.SecurityTradeRecords.Where(x => x.SecurityInfoId == securityInfo.SecurityInfoId).OrderBy(x => x.DateOfTrade).ToList();
-
-                    if (listOfTrades.Count == 0)
-                        continue;
-
-                    //Пройдемся по всем данным и соберем их по неделям.
-                    List<List<SecurityTradeRecord>> securityTradeRecordByMonths = new List<List<SecurityTradeRecord>>();
-                    List<SecurityTradeRecord> securityTradeRecordInWeek = new List<SecurityTradeRecord>();
-                    DateOnly firstDayOfMonthDate = listOfTrades.First().DateOfTrade;
-                    //Поставим день на первый день месяца
-                    firstDayOfMonthDate = firstDayOfMonthDate.AddDays(1 - firstDayOfMonthDate.Day);
-
-                    for (int i = 0; i < listOfTrades.Count; i++)
+                    var securityInfos = dbContext.SecurityInfos.ToList();
+                    foreach (var securityInfo in securityInfos)
                     {
-                        if (listOfTrades[i].DateOfTrade.Month == firstDayOfMonthDate.Month &&
-                            listOfTrades[i].DateOfTrade.Year == firstDayOfMonthDate.Year)
-                            securityTradeRecordInWeek.Add(listOfTrades[i]);
-                        else
+                        //Выберем все данные о торгах по конкретной акции.
+                        var listOfTrades = dbContext.SecurityTradeRecords.Where(x => x.SecurityInfoId == securityInfo.SecurityInfoId).OrderBy(x => x.DateOfTrade).ToList();
+
+                        if (listOfTrades.Count == 0)
+                            continue;
+
+                        //Пройдемся по всем данным и соберем их по неделям.
+                        List<List<SecurityTradeRecord>> securityTradeRecordByMonths = new List<List<SecurityTradeRecord>>();
+                        List<SecurityTradeRecord> securityTradeRecordInWeek = new List<SecurityTradeRecord>();
+                        DateOnly firstDayOfMonthDate = listOfTrades.First().DateOfTrade;
+                        //Поставим день на первый день месяца
+                        firstDayOfMonthDate = firstDayOfMonthDate.AddDays(1 - firstDayOfMonthDate.Day);
+
+                        for (int i = 0; i < listOfTrades.Count; i++)
                         {
-                            //Если даты стали больше, значит мы прошли уже все возможные торги на неделе, и надо переходить к подсчету следующей
+                            if (listOfTrades[i].DateOfTrade.Month == firstDayOfMonthDate.Month &&
+                                listOfTrades[i].DateOfTrade.Year == firstDayOfMonthDate.Year)
+                                securityTradeRecordInWeek.Add(listOfTrades[i]);
+                            else
+                            {
+                                //Если даты стали больше, значит мы прошли уже все возможные торги на неделе, и надо переходить к подсчету следующей
+                                securityTradeRecordByMonths.Add(securityTradeRecordInWeek);
+                                securityTradeRecordInWeek = new List<SecurityTradeRecord>();
+                                firstDayOfMonthDate = listOfTrades[i].DateOfTrade;
+                                firstDayOfMonthDate = firstDayOfMonthDate.AddDays(1 - firstDayOfMonthDate.Day);
+                                i--;
+                            }
+                        }
+
+                        // Добавим данные последнего месяца
+                        if (securityTradeRecordInWeek.Count > 0)
                             securityTradeRecordByMonths.Add(securityTradeRecordInWeek);
-                            securityTradeRecordInWeek = new List<SecurityTradeRecord>();
-                            firstDayOfMonthDate = listOfTrades[i].DateOfTrade;
-                            firstDayOfMonthDate = firstDayOfMonthDate.AddDays(1 - firstDayOfMonthDate.Day);
-                            i--;
-                        }
-                    }
 
-                    // Добавим данные последнего месяца
-                    if (securityTradeRecordInWeek.Count > 0)
-                        securityTradeRecordByMonths.Add(securityTradeRecordInWeek);
-
-                    List<SecurityTradeRecordByMonth> newListOfMonthTrades = new List<SecurityTradeRecordByMonth>();
-                    //Собрали все данные по неделям, теперь сформируем на их основе новые данные.
-                    foreach (var month in securityTradeRecordByMonths)
-                    {
-                        if (month.Count > 0)
+                        List<SecurityTradeRecordByMonth> newListOfMonthTrades = new List<SecurityTradeRecordByMonth>();
+                        //Собрали все данные по неделям, теперь сформируем на их основе новые данные.
+                        foreach (var month in securityTradeRecordByMonths)
                         {
-                            SecurityTradeRecordByMonth securityTradeRecord = new SecurityTradeRecordByMonth();
-                            //найдем открывающие и закрывающие значения 
-                            securityTradeRecord.Open = month.First().Open;
-                            securityTradeRecord.Close = month.Last().Close;
-                            securityTradeRecord.Low = month.Min(x => x.Low);
-                            securityTradeRecord.High = month.Max(x => x.High);
-                            //Поставим дату на начало месяца
-                            securityTradeRecord.DateOfTrade = month.First().DateOfTrade.AddDays(1 - month.First().DateOfTrade.Day);
-                            securityTradeRecord.NumberOfTrades = month.Sum(x => x.NumberOfTrades);
-                            securityTradeRecord.Value = month.Sum(x => x.Value);
-                            securityTradeRecord.SecurityInfo = month.First().SecurityInfo;
-                            securityTradeRecord.SecurityInfoId = month.First().SecurityInfoId;
-                            newListOfMonthTrades.Add(securityTradeRecord);
+                            if (month.Count > 0)
+                            {
+                                SecurityTradeRecordByMonth securityTradeRecord = new SecurityTradeRecordByMonth();
+                                //найдем открывающие и закрывающие значения 
+                                securityTradeRecord.Open = month.First().Open;
+                                securityTradeRecord.Close = month.Last().Close;
+                                securityTradeRecord.Low = month.Min(x => x.Low);
+                                securityTradeRecord.High = month.Max(x => x.High);
+                                //Поставим дату на начало месяца
+                                securityTradeRecord.DateOfTrade = month.First().DateOfTrade.AddDays(1 - month.First().DateOfTrade.Day);
+                                securityTradeRecord.NumberOfTrades = month.Sum(x => x.NumberOfTrades);
+                                securityTradeRecord.Value = month.Sum(x => x.Value);
+                                securityTradeRecord.SecurityInfo = month.First().SecurityInfo;
+                                securityTradeRecord.SecurityInfoId = month.First().SecurityInfoId;
+                                newListOfMonthTrades.Add(securityTradeRecord);
+                            }
                         }
-                    }
 
-                    foreach (var record in newListOfMonthTrades)
-                    {
-                        var existingItem = dbContext.SecurityTradeRecordsByMonth.FirstOrDefault(x => x.DateOfTrade == record.DateOfTrade &&
-                                                                                            x.SecurityInfo == record.SecurityInfo);
-                        //Если нашли старые совпадающие записи, то удалим, и накатнем поверх новые.
-                        if (existingItem != null)
-                            dbContext.SecurityTradeRecordsByMonth.Remove(existingItem);
+                        foreach (var record in newListOfMonthTrades)
+                        {
+                            var existingItem = dbContext.SecurityTradeRecordsByMonth.FirstOrDefault(x => x.DateOfTrade == record.DateOfTrade &&
+                                                                                                x.SecurityInfo == record.SecurityInfo);
+                            //Если нашли старые совпадающие записи, то удалим, и накатнем поверх новые.
+                            if (existingItem != null)
+                                dbContext.SecurityTradeRecordsByMonth.Remove(existingItem);
 
-                        dbContext.SecurityTradeRecordsByMonth.Add(record);
+                            dbContext.SecurityTradeRecordsByMonth.Add(record);
+                        }
+                        dbContext.SaveChanges();
                     }
-                    dbContext.SaveChanges();
                 }
+                return "Сохранение прошло успешно";
             }
-            return "Сохранение прошло успешно";
+            catch(Exception ex)
+            {
+                return "Возникла необработанная ошибка\r\n" + ex;
+            }
         }
 
     }

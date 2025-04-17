@@ -17,6 +17,20 @@ function ShareComponent() {
         }[]
     }
 
+    const toolTipBox = (y: number[]) => {
+        const content = document.createElement('div');
+
+        content.innerHTML =
+            '<span style="float:left;">High:</span>' + '<span style="float:right">' + y[0] + "</span><br>" +
+            '<span style="float:left;">Open:</span>' + '<span style="float:right">' + y[1] + "</span><br>" +
+            '<span style="float:left;">Close:</span>' + '<span style="float:right">' + y[2] + "</span><br>" +
+            '<span style="float:left;">Low:</span>' + '<span style="float:right">' + y[3] + "</span><br>" +
+            '<span style="text-align:left;">Volume:</span>' + '<span style="float:right">' + y[4] + "</span><br>";
+
+        return content;
+
+    }
+
     const ApexChart = () => {
 
         const options: ApexOptions = {
@@ -35,7 +49,17 @@ function ShareComponent() {
                 tooltip: {
                     enabled: true
                 }
-            }
+            },
+            tooltip: {
+                custom: function (opts) {
+                    const y =
+                        opts.ctx.w.config.series[opts.seriesIndex].data[opts.dataPointIndex]
+                            .y;
+                    return (
+                        toolTipBox(y)
+                    );
+                },
+            },
         };
 
         return (
@@ -45,8 +69,12 @@ function ShareComponent() {
                 </div>
                 :
                 <div>
-                    <div id="chart" >
-                        <ReactApexChart options={options} series={[series]} type="candlestick" height={350} width={800} />
+                    <div id="chart">
+                        <ReactApexChart options={options}
+                            series={[series]}
+                            type="candlestick"
+                            height={350}
+                            width={800} />
                         <button onClick={GetTradeRecordsInDays}>Month</button>
                         <button onClick={GetTradeRecordsInWeeks}>Year</button>
                         <button onClick={GetTradeRecordsInMonths}>All Records</button>

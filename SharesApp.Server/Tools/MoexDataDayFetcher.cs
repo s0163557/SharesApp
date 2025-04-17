@@ -40,6 +40,8 @@ namespace SharesApp.Server.Tools
                         await moexController.SendSecurityTradeRecordsToDb(listOfStocks);
                         await FetchNewData(HoursMiliseconds24);
                     }
+                    //Теперь надо проверить, что это начало месяца или завершение недели, и добавить туда новые данные
+
                     Debug.WriteLine("Успешно сохранил данные");
                 }
                 catch (Exception ex)
