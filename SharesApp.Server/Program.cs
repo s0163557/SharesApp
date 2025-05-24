@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Builder;
+using SharesApp.Server.Services;
 using SharesApp.Server.Tools;
 using Stock_Analysis_Web_App.Classes;
 using Stock_Analysis_Web_App.Controllers;
@@ -16,7 +17,7 @@ internal class Program
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
         builder.Services.AddSingleton<MoexHttpClient>();
-        builder.Services.AddSingleton<MoexDataDayFetcher>();
+        builder.Services.AddHostedService<FetchingDataService>();
 
         var app = builder.Build();
 
@@ -38,9 +39,6 @@ internal class Program
         app.MapControllers();
 
         app.MapFallbackToFile("/index.html");
-
-        //Вызовем сервиис, чтобы он создался и запустил проверку
-        app.Services.GetService<MoexDataDayFetcher>();
 
         app.Run();
     }

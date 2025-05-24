@@ -367,7 +367,7 @@ namespace Stock_Analysis_Web_App.Controllers
                         if (listOfTrades.Count == 0)
                             continue;
 
-                        //Пройдемся по всем данным и соберем их по неделям.
+                        //Пройдемся по всем данным и соберем их по месяцам.
                         List<List<SecurityTradeRecord>> securityTradeRecordByMonths = new List<List<SecurityTradeRecord>>();
                         List<SecurityTradeRecord> securityTradeRecordInWeek = new List<SecurityTradeRecord>();
                         DateOnly firstDayOfMonthDate = listOfTrades.First().DateOfTrade;

@@ -126,7 +126,6 @@ namespace SharesApp.Server.Controllers
             {
                 return "";
             }
-
         }
 
         [HttpGet]
