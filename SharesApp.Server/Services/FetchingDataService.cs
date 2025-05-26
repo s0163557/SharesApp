@@ -135,8 +135,8 @@ namespace SharesApp.Server.Services
                     Console.WriteLine(ex);
                 }
 
-                TimeSpan sleepTime = DateTime.Now - fetchingTime;
-                await Task.Delay(sleepTime, stoppingToken);
+                TimeSpan sleepTime = fetchingTime - DateTime.Now;
+                await Task.Delay((int)sleepTime.TotalMilliseconds, stoppingToken);
             }
         }
     }
