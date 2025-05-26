@@ -4,6 +4,8 @@ import './App.css';
 interface Security {
     securityInfoId: number;
     securityId: string;
+    name: string;
+    isin: string;
 }
 
 function App() {
@@ -16,6 +18,8 @@ function App() {
                 <tr>
                     <th>Id</th>
                     <th>Short Name</th>
+                    <th>Long Name</th>
+                    <th>ISIN</th>
                 </tr>
             </thead>
             <tbody>
@@ -26,6 +30,12 @@ function App() {
                         </td>
                         <td>
                             <a href={"/shares/" + security.securityId}>{security.securityId}</a>
+                        </td>
+                        <td>
+                            {security.name}
+                        </td>
+                        <td>
+                            {security.isin}
                         </td>
                     </tr>
                 )}
