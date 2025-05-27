@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using SharesApp.Server.Context;
 using SharesApp.Server.Models;
 
 namespace SharesApp.Server.Controllers
@@ -108,7 +107,7 @@ namespace SharesApp.Server.Controllers
                 DateOnly yearDelay = DateOnly.FromDateTime(DateTime.Now.AddYears(-1));
                 using (SecuritiesContext dbContext = new SecuritiesContext())
                 {
-                    List<SecurityTradeRecordByWeek> securityTradeRecords = dbContext.SecurityTradeRecordsByWeek.Where(x =>
+                    List<SecurityTradeRecordsByWeek> securityTradeRecords = dbContext.SecurityTradeRecordsByWeeks.Where(x =>
                     x.SecurityInfo.SecurityId == securityid &&
                     x.DateOfTrade >= yearDelay).ToList();
 
@@ -136,7 +135,7 @@ namespace SharesApp.Server.Controllers
             {
                 using (SecuritiesContext dbContext = new SecuritiesContext())
                 {
-                    List<SecurityTradeRecordByMonth> securityTradeRecords = dbContext.SecurityTradeRecordsByMonth.Where(x =>
+                    List<SecurityTradeRecordsByMonth> securityTradeRecords = dbContext.SecurityTradeRecordsByMonths.Where(x =>
                     x.SecurityInfo.SecurityId == securityid).ToList();
 
                     var records = from record in securityTradeRecords

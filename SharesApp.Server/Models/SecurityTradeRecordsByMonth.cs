@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace SharesApp.Server.Models;
 
-public partial class SecurityTradeRecord
+public partial class SecurityTradeRecordsByMonth
 {
     public int SecurityTradeRecordId { get; set; }
 

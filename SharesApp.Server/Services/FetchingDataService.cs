@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using SharesApp.Server.Context;
 using SharesApp.Server.Models;
 using SharesApp.Server.Tools;
 using Stock_Analysis_Web_App.Classes;
@@ -18,7 +17,7 @@ namespace SharesApp.Server.Services
                 //Найдем добавленную акцию по её ID
                 SecurityInfo securityInfo = dbContext.SecurityInfos.Where(x => x.SecurityId == secId).FirstOrDefault();
                 //получим последнюю неделю
-                SecurityTradeRecordByWeek tradeRecordByWeek = dbContext.SecurityTradeRecordsByWeek.Where(x => x.SecurityInfo == securityInfo).Last();
+                SecurityTradeRecordsByWeek tradeRecordByWeek = dbContext.SecurityTradeRecordsByWeeks.Where(x => x.SecurityInfo == securityInfo).Last();
                 //Будем добавлять недели пока не перескочим текущую дату
                 DateOnly currentWeekDateStart = tradeRecordByWeek.DateOfTrade;
                 var dateTimeNow = DateOnly.FromDateTime(DateTime.Now);
@@ -30,7 +29,7 @@ namespace SharesApp.Server.Services
                 //Выбирем все данные начиная с этой недели
                 List<SecurityTradeRecord> week = dbContext.SecurityTradeRecords.Where(x => x.DateOfTrade < currentWeekDateStart && x.SecurityInfo == securityInfo).ToList();
                 //Соберём итоговые данные 
-                SecurityTradeRecordByWeek securityTradeRecord = new SecurityTradeRecordByWeek();
+                SecurityTradeRecordsByWeek securityTradeRecord = new SecurityTradeRecordsByWeek();
                 securityTradeRecord.Open = week.First().Open;
                 securityTradeRecord.Close = week.Last().Close;
                 securityTradeRecord.Low = week.Min(x => x.Low);
@@ -43,9 +42,9 @@ namespace SharesApp.Server.Services
                 securityTradeRecord.SecurityInfoId = week.First().SecurityInfoId;
 
                 //Сформировали данные. Обновим старую запись, если она есть.
-                if (dbContext.SecurityTradeRecordsByWeek.Where(x => x.DateOfTrade == currentWeekDateStart &&  x.SecurityInfo == securityInfo) != null)
+                if (dbContext.SecurityTradeRecordsByWeeks.Where(x => x.DateOfTrade == currentWeekDateStart &&  x.SecurityInfo == securityInfo) != null)
                     securityTradeRecord.SecurityTradeRecordId = week.First().SecurityTradeRecordId;
-                dbContext.SecurityTradeRecordsByWeek.Update(securityTradeRecord);
+                dbContext.SecurityTradeRecordsByWeeks.Update(securityTradeRecord);
                 dbContext.SaveChanges();
             }
         }
@@ -57,7 +56,7 @@ namespace SharesApp.Server.Services
                 //Найдем добавленную акцию по её ID
                 SecurityInfo securityInfo = dbContext.SecurityInfos.Where(x => x.SecurityId == secId).FirstOrDefault();
                 //получим последнюю неделю
-                SecurityTradeRecordByMonth tradeRecordByMonth = dbContext.SecurityTradeRecordsByMonth.Where(x => x.SecurityInfo == securityInfo).Last();
+                SecurityTradeRecordsByMonth tradeRecordByMonth = dbContext.SecurityTradeRecordsByMonths.Where(x => x.SecurityInfo == securityInfo).Last();
                 //Будем добавлять недели пока не перескочим текущую дату
                 var dateTimeNow = DateOnly.FromDateTime(DateTime.Now);
                 DateOnly currentMonthDateStart = tradeRecordByMonth.DateOfTrade;
@@ -69,7 +68,7 @@ namespace SharesApp.Server.Services
                 //Выбирем все данные начиная с этой недели
                 List<SecurityTradeRecord> month = dbContext.SecurityTradeRecords.Where(x => x.DateOfTrade <= currentMonthDateStart && x.SecurityInfo == securityInfo).ToList();
                 //Соберём итоговые данные 
-                SecurityTradeRecordByMonth securityTradeRecord = new SecurityTradeRecordByMonth();
+                SecurityTradeRecordsByMonth securityTradeRecord = new SecurityTradeRecordsByMonth();
                 securityTradeRecord.Open = month.First().Open;
                 securityTradeRecord.Close = month.Last().Close;
                 securityTradeRecord.Low = month.Min(x => x.Low);
@@ -82,9 +81,9 @@ namespace SharesApp.Server.Services
                 securityTradeRecord.SecurityInfoId = month.First().SecurityInfoId;
 
                 //Сформировали данные. Обновим старую запись, если она есть.
-                if (dbContext.SecurityTradeRecordsByMonth.Where(x => x.DateOfTrade == currentMonthDateStart && x.SecurityInfo == securityInfo) != null)
+                if (dbContext.SecurityTradeRecordsByMonths.Where(x => x.DateOfTrade == currentMonthDateStart && x.SecurityInfo == securityInfo) != null)
                     securityTradeRecord.SecurityTradeRecordId = month.First().SecurityTradeRecordId;
-                dbContext.SecurityTradeRecordsByMonth.Update(securityTradeRecord);
+                dbContext.SecurityTradeRecordsByMonths.Update(securityTradeRecord);
                 dbContext.SaveChanges();
             }
         }

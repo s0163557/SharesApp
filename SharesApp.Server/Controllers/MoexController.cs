@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json.Linq;
-using SharesApp.Server.Context;
 using SharesApp.Server.Models;
 using SharesApp.Server.Tools;
 using Stock_Analysis_Web_App.Classes;
@@ -309,13 +308,13 @@ namespace Stock_Analysis_Web_App.Controllers
                     if (securityTradeRecordInWeek.Count > 0)
                         securityTradeRecordByWeeks.Add(securityTradeRecordInWeek);
 
-                    List<SecurityTradeRecordByWeek> newListOfWeekTrades = new List<SecurityTradeRecordByWeek>();
+                    List<SecurityTradeRecordsByWeek> newListOfWeekTrades = new List<SecurityTradeRecordsByWeek>();
                     //Собрали все данные по неделям, теперь сформируем на их основе новые данные.
                     foreach (var week in securityTradeRecordByWeeks)
                     {
                         if (week.Count > 0)
                         {
-                            SecurityTradeRecordByWeek securityTradeRecord = new SecurityTradeRecordByWeek();
+                            SecurityTradeRecordsByWeek securityTradeRecord = new SecurityTradeRecordsByWeek();
                             //найдем открывающие и закрывающие значения 
                             securityTradeRecord.Open = week.First().Open;
                             securityTradeRecord.Close = week.Last().Close;
@@ -335,13 +334,13 @@ namespace Stock_Analysis_Web_App.Controllers
                     }
                     foreach (var record in newListOfWeekTrades)
                     {
-                        var existingItem = dbContext.SecurityTradeRecordsByWeek.FirstOrDefault(x => x.DateOfTrade == record.DateOfTrade &&
+                        var existingItem = dbContext.SecurityTradeRecordsByWeeks.FirstOrDefault(x => x.DateOfTrade == record.DateOfTrade &&
                                                                                             x.SecurityInfo == record.SecurityInfo);
                         //Если нашли старые совпадающие записи, то удалим, и накатнем поверх новые.
                         if (existingItem != null)
-                            dbContext.SecurityTradeRecordsByWeek.Remove(existingItem);
+                            dbContext.SecurityTradeRecordsByWeeks.Remove(existingItem);
 
-                        dbContext.SecurityTradeRecordsByWeek.Add(record);
+                        dbContext.SecurityTradeRecordsByWeeks.Add(record);
                     }
 
                     dbContext.SaveChanges();
@@ -394,13 +393,13 @@ namespace Stock_Analysis_Web_App.Controllers
                         if (securityTradeRecordInWeek.Count > 0)
                             securityTradeRecordByMonths.Add(securityTradeRecordInWeek);
 
-                        List<SecurityTradeRecordByMonth> newListOfMonthTrades = new List<SecurityTradeRecordByMonth>();
+                        List<SecurityTradeRecordsByMonth> newListOfMonthTrades = new List<SecurityTradeRecordsByMonth>();
                         //Собрали все данные по неделям, теперь сформируем на их основе новые данные.
                         foreach (var month in securityTradeRecordByMonths)
                         {
                             if (month.Count > 0)
                             {
-                                SecurityTradeRecordByMonth securityTradeRecord = new SecurityTradeRecordByMonth();
+                                SecurityTradeRecordsByMonth securityTradeRecord = new SecurityTradeRecordsByMonth();
                                 //найдем открывающие и закрывающие значения 
                                 securityTradeRecord.Open = month.First().Open;
                                 securityTradeRecord.Close = month.Last().Close;
@@ -418,13 +417,13 @@ namespace Stock_Analysis_Web_App.Controllers
 
                         foreach (var record in newListOfMonthTrades)
                         {
-                            var existingItem = dbContext.SecurityTradeRecordsByMonth.FirstOrDefault(x => x.DateOfTrade == record.DateOfTrade &&
+                            var existingItem = dbContext.SecurityTradeRecordsByMonths.FirstOrDefault(x => x.DateOfTrade == record.DateOfTrade &&
                                                                                                 x.SecurityInfo == record.SecurityInfo);
                             //Если нашли старые совпадающие записи, то удалим, и накатнем поверх новые.
                             if (existingItem != null)
-                                dbContext.SecurityTradeRecordsByMonth.Remove(existingItem);
+                                dbContext.SecurityTradeRecordsByMonths.Remove(existingItem);
 
-                            dbContext.SecurityTradeRecordsByMonth.Add(record);
+                            dbContext.SecurityTradeRecordsByMonths.Add(record);
                         }
                         dbContext.SaveChanges();
                     }
