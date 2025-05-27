@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Builder;
+using SharesApp.Server.Classes;
+using SharesApp.Server.Models;
 using SharesApp.Server.Services;
 using SharesApp.Server.Tools;
 using Stock_Analysis_Web_App.Classes;
@@ -17,6 +19,8 @@ internal class Program
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
         builder.Services.AddSingleton<MoexHttpClient>();
+        builder.Services.AddSingleton<BankiRuHttpClient>();
+        builder.Services.AddTransient<SecuritiesContext>();
         builder.Services.AddHostedService<FetchingDataService>();
 
         var app = builder.Build();

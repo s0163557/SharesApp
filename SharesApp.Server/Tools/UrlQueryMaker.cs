@@ -10,6 +10,7 @@ namespace Stock_Analysis_Web_App.Tools
         public static string DbUserPassword = "Nemes341";
         public static string DbName = "securities";
         public static string BaseMoexIssUrl = "https://iss.moex.com/iss/";
+        public static string BaseBankiRuUrl = "https://www.banki.ru/";
 
         public static string GetDbConnectionUrl()
         {
