@@ -2,7 +2,9 @@
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using OfficeOpenXml;
 using SharesApp.Server.Classes;
+using SharesApp.Server.Models;
 
 namespace SharesApp.Server.Controllers
 {
@@ -12,7 +14,7 @@ namespace SharesApp.Server.Controllers
     {
 
         private DateOnly GetToday()
-        { 
+        {
             return DateOnly.FromDateTime(DateTime.Now);
         }
 
@@ -26,7 +28,7 @@ namespace SharesApp.Server.Controllers
         }
 
         [HttpGet("DownloadExcelFile")]
-        public async Task DownloadExcelFile()
+        public async Task<IResult> DownloadExcelFile()
         {
             using (CbrHttpClient httpClient = new CbrHttpClient())
             {
@@ -50,20 +52,42 @@ namespace SharesApp.Server.Controllers
                         {
                             await contentStream.CopyToAsync(fileStream);
                         }
-                        Results.Accepted();
+                        return Results.Accepted(value: filePath.ToString());
                     }
                 }
                 catch (Exception ex)
                 {
-                    Results.Conflict(ex);
+                    return Results.Conflict(ex.Message);
                 }
             }
+
         }
 
-        public async ReadExcelFile()
-        { 
-            
+        [HttpGet("ReadExcelFile")]
+        public List<Inflation> ReadExcelFile(string pathToExcelFile)
+        {
+            List<Inflation> parsedInflations = new List<Inflation>();
+            using (var package = new ExcelPackage(new FileInfo(pathToExcelFile)))
+            {
+                var worksheet = package.Workbook.Worksheets[0];
+
+                //Начинаем со второй строки потому что в первой идет объявление столбцов
+                for (int rowCounter = 2; rowCounter < worksheet.Rows.Count(); rowCounter++)
+                {
+                    //Обычно в этих файлах три столбца - Дата, Ключевая ставка, Инфляция. Прочтём их и сохраним. 
+                    Inflation currentRowInflation = new Inflation();
+                    currentRowInflation.DateOfRecord = DateOnly.Parse(worksheet.Cells[rowCounter, 1].Text);
+                    currentRowInflation.KeyRate = decimal.Parse(worksheet.Cells[rowCounter, 2].Text);
+                    currentRowInflation.InflationValue = decimal.Parse(worksheet.Cells[rowCounter, 3].Text);
+                    parsedInflations.Add(currentRowInflation);
+                }
+                return parsedInflations;
+            }
+
         }
+
+
+
 
     }
 }

@@ -15,6 +15,8 @@ public partial class SecuritiesContext : DbContext
     {
     }
 
+    public virtual DbSet<Inflation> Inflations { get; set; }
+
     public virtual DbSet<SecurityDividend> SecurityDividends { get; set; }
 
     public virtual DbSet<SecurityInfo> SecurityInfos { get; set; }
@@ -31,6 +33,22 @@ public partial class SecuritiesContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Inflation>(entity =>
+        {
+            entity.HasKey(e => e.InflationId).HasName("inflations_pkey");
+
+            entity.ToTable("inflations");
+
+            entity.Property(e => e.InflationId).HasColumnName("inflation_id");
+            entity.Property(e => e.DateOfRecord).HasColumnName("date_of_record");
+            entity.Property(e => e.InflationValue)
+                .HasPrecision(5, 2)
+                .HasColumnName("inflation_value");
+            entity.Property(e => e.KeyRate)
+                .HasPrecision(5, 2)
+                .HasColumnName("key_rate");
+        });
+
         modelBuilder.Entity<SecurityDividend>(entity =>
         {
             entity.HasKey(e => e.SecurityDividendsId).HasName("security_dividend_pkey");
