@@ -27,8 +27,7 @@ namespace SharesApp.Server.Controllers
             return urlToFile;
         }
 
-        [HttpGet("DownloadExcelFile")]
-        public async Task<IResult> DownloadExcelFile()
+        private async Task<string> DownloadExcelFile()
         {
             using (CbrHttpClient httpClient = new CbrHttpClient())
             {
@@ -52,19 +51,18 @@ namespace SharesApp.Server.Controllers
                         {
                             await contentStream.CopyToAsync(fileStream);
                         }
-                        return Results.Accepted(value: filePath.ToString());
+                        return filePath.ToString();
                     }
                 }
                 catch (Exception ex)
                 {
-                    return Results.Conflict(ex.Message);
+                    return ex.Message;
                 }
             }
 
         }
 
-        [HttpGet("ReadExcelFile")]
-        public List<Inflation> ReadExcelFile(string pathToExcelFile)
+        private List<Inflation> ReadExcelFile(string pathToExcelFile)
         {
             List<Inflation> parsedInflations = new List<Inflation>();
             using (var package = new ExcelPackage(new FileInfo(pathToExcelFile)))
@@ -76,9 +74,27 @@ namespace SharesApp.Server.Controllers
                 {
                     //Обычно в этих файлах три столбца - Дата, Ключевая ставка, Инфляция. Прочтём их и сохраним. 
                     Inflation currentRowInflation = new Inflation();
-                    currentRowInflation.DateOfRecord = DateOnly.Parse(worksheet.Cells[rowCounter, 1].Text);
-                    currentRowInflation.KeyRate = decimal.Parse(worksheet.Cells[rowCounter, 2].Text);
-                    currentRowInflation.InflationValue = decimal.Parse(worksheet.Cells[rowCounter, 3].Text);
+
+                    if (DateOnly.TryParse(worksheet.Cells[rowCounter, 1].Text, out DateOnly parsedDate))
+                        currentRowInflation.DateOfRecord = parsedDate;
+                    else
+                    {
+                        continue;
+                    }
+
+                    //KeyRate нам не очень важен, поэтмоу если он не сможет спарсится - не беда
+                    currentRowInflation.KeyRate = -1;
+                    if (decimal.TryParse(worksheet.Cells[rowCounter, 2].Text, out decimal parsedKeyRate))
+                        currentRowInflation.KeyRate = parsedKeyRate;
+
+                    //Если мы не смогли спарсить инфляцию - пропускаем это значение
+                    if (decimal.TryParse(worksheet.Cells[rowCounter, 3].Text, out decimal parsedInflationValue))
+                        currentRowInflation.InflationValue = parsedInflationValue;
+                    else
+                    {
+                        continue;
+                    }
+
                     parsedInflations.Add(currentRowInflation);
                 }
                 return parsedInflations;
@@ -86,8 +102,45 @@ namespace SharesApp.Server.Controllers
 
         }
 
+        private string SaveRecordsInDb(List<Inflation> inflationRecords)
+        {
+            using (SecuritiesContext dbContext = new SecuritiesContext())
+            {
+                try
+                {
+                    foreach (var inflation in inflationRecords)
+                    {
+                        //Проверим что в базе нет аналогичной записи
+                        if (!dbContext.Inflations.Where(x => x.InflationValue == inflation.InflationValue
+                                                        && x.KeyRate == inflation.KeyRate
+                                                        && x.DateOfRecord == inflation.DateOfRecord).Any())
+                            dbContext.Inflations.Add(inflation);
+                    }
+                    return dbContext.SaveChanges().ToString();
+                }
+                catch (Exception ex)
+                {
+                    return ex.Message;
+                }
+            }
+        }
 
+        [HttpGet("DownloadAndUploadData")]
+        public async Task<IResult> DownloadAndUploadData()
+        {
+            try
+            {
+                string pathToFile = await DownloadExcelFile();
+                List<Inflation> inflationRecords = ReadExcelFile(pathToFile);
+                SaveRecordsInDb(inflationRecords);
+                return Results.Accepted();
+            }
+            catch (Exception ex)
+            {
+                return Results.Conflict(ex);
+            }
 
+        }
 
     }
 }
