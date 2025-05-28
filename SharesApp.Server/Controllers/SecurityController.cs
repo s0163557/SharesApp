@@ -12,13 +12,37 @@ namespace SharesApp.Server.Controllers
     public class SecurityController : ControllerBase
     {
         [HttpGet]
-        [Route("GetSecurities")]
-        public List<SecurityInfo> GetListOfSecurities()
+        [Route("GetActiveSecurities")]
+        public List<SecurityInfo> GetListOfActiveSecurities()
         {
             using (SecuritiesContext dbContext = new SecuritiesContext())
             {
                 dbContext.SecurityInfos.Load();
-                return dbContext.SecurityInfos.Select(x => x).ToList();
+
+                var tradeRecordsQuery = from tradeRecord in dbContext.SecurityTradeRecords
+                                        where tradeRecord.DateOfTrade.Year == DateTime.Now.Year
+                                        select new SecurityTradeRecord
+                                        {
+                                            SecurityInfoId = tradeRecord.SecurityInfoId,
+                                            DateOfTrade = tradeRecord.DateOfTrade,
+                                        };
+
+                var securityInfos = from tradeRecord in tradeRecordsQuery
+                                    join securityInfo in dbContext.SecurityInfos on tradeRecord.SecurityInfoId equals securityInfo.SecurityInfoId
+                                    group securityInfo by new { securityInfo.SecurityInfoId, securityInfo.SecurityId, securityInfo.Isin, securityInfo.Name } into securityGroup
+                                    select new SecurityInfo
+                                    {
+                                        SecurityInfoId = securityGroup.Key.SecurityInfoId,
+                                        SecurityId = securityGroup.Key.SecurityId,
+                                        Isin = securityGroup.Key.Isin,
+                                        Name = securityGroup.Key.Name,
+                                    };
+                                    
+
+
+
+
+                return securityInfos.ToList();
             }
         }
 

@@ -118,7 +118,7 @@ namespace SharesApp.Server.Controllers
                 for (int shareCounter = 0; shareCounter < shareNamesSecurityInfoDictionary.Count; shareCounter++)
                 {
                     string dividentNameInBankRu = shareNamesSecurityInfoDictionary.Keys.ElementAt(shareCounter);
-                    var dividentsTableInhtml = await GetDividentsTableHtml(dividentNameInBankRu);
+                    var dividentsTableInhtml = GetDividentsTableHtml(dividentNameInBankRu);
                     //Нам пришел чистый html код таблицы, и чтобы 
                     var doc = new HtmlDocument();
                     doc.LoadHtml(dividentsTableInhtml);
@@ -202,7 +202,7 @@ namespace SharesApp.Server.Controllers
         }
 
         [HttpGet("GetDividentsTableHtml")]
-        private async Task<string> GetDividentsTableHtml(string sharesName = "EnelRossiya_ENRU")
+        private string GetDividentsTableHtml(string sharesName = "EnelRossiya_ENRU")
         {
             var options = new ChromeOptions();
             options.AddArgument("--headless");

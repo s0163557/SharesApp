@@ -50,7 +50,7 @@ function App() {
     );
 
     async function fetchSecuritiesData() {
-        const response = await fetch("/api/Security/GetSecurities");
+        const response = await fetch("/api/Security/GetActiveSecurities");
         const data = await response.json();
         setSecurities(data);
     }
