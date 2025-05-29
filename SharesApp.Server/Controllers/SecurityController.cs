@@ -13,36 +13,61 @@ namespace SharesApp.Server.Controllers
     {
         [HttpGet]
         [Route("GetActiveSecurities")]
-        public List<SecurityInfo> GetListOfActiveSecurities()
+        public List<SecurityInfo> GetActiveSecurities()
         {
             using (SecuritiesContext dbContext = new SecuritiesContext())
             {
-                dbContext.SecurityInfos.Load();
-
                 var tradeRecordsQuery = from tradeRecord in dbContext.SecurityTradeRecords
-                                        where tradeRecord.DateOfTrade.Year == DateTime.Now.Year
+                                        group tradeRecord by tradeRecord.SecurityInfoId into securityInfoGroup
                                         select new SecurityTradeRecord
                                         {
-                                            SecurityInfoId = tradeRecord.SecurityInfoId,
-                                            DateOfTrade = tradeRecord.DateOfTrade,
+                                            SecurityInfoId = securityInfoGroup.Key,
+                                            DateOfTrade = securityInfoGroup.Max(x => x.DateOfTrade),
                                         };
 
-                var securityInfos = from tradeRecord in tradeRecordsQuery
-                                    join securityInfo in dbContext.SecurityInfos on tradeRecord.SecurityInfoId equals securityInfo.SecurityInfoId
-                                    group securityInfo by new { securityInfo.SecurityInfoId, securityInfo.SecurityId, securityInfo.Isin, securityInfo.Name } into securityGroup
-                                    select new SecurityInfo
-                                    {
-                                        SecurityInfoId = securityGroup.Key.SecurityInfoId,
-                                        SecurityId = securityGroup.Key.SecurityId,
-                                        Isin = securityGroup.Key.Isin,
-                                        Name = securityGroup.Key.Name,
-                                    };
-                                    
+                var filteredRecords = from record in tradeRecordsQuery
+                                      where record.DateOfTrade.Month - 3 <= DateTime.Now.Month
+                                      join securityInfo in dbContext.SecurityInfos on record.SecurityInfoId equals securityInfo.SecurityInfoId
+                                      orderby securityInfo.SecurityInfoId
+                                      select new SecurityInfo
+                                      {
+                                          SecurityInfoId = securityInfo.SecurityInfoId,
+                                          SecurityId = securityInfo.SecurityId,
+                                          Isin = securityInfo.Isin,
+                                          Name = securityInfo.Name,
+                                      };
 
+                return filteredRecords.ToList();
+            }
+        }
 
+        [HttpGet]
+        [Route("GetInactiveSecurities")]
+        public List<SecurityInfo> GetInactiveSecurities()
+        {
+            using (SecuritiesContext dbContext = new SecuritiesContext())
+            {
+                var tradeRecordsQuery = from tradeRecord in dbContext.SecurityTradeRecords
+                                        group tradeRecord by tradeRecord.SecurityInfoId into securityInfoGroup
+                                        select new SecurityTradeRecord
+                                        {
+                                            SecurityInfoId = securityInfoGroup.Key,
+                                            DateOfTrade = securityInfoGroup.Max(x => x.DateOfTrade),
+                                        };
 
+                var filteredRecords = from record in tradeRecordsQuery
+                                      where record.DateOfTrade.Month - 3 >= DateTime.Now.Month
+                                      join securityInfo in dbContext.SecurityInfos on record.SecurityInfoId equals securityInfo.SecurityInfoId
+                                      orderby securityInfo.SecurityInfoId
+                                      select new SecurityInfo
+                                      {
+                                          SecurityInfoId = securityInfo.SecurityInfoId,
+                                          SecurityId = securityInfo.SecurityId,
+                                          Isin = securityInfo.Isin,
+                                          Name = securityInfo.Name,
+                                      };
 
-                return securityInfos.ToList();
+                return filteredRecords.ToList();
             }
         }
 
