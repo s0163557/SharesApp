@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    
     - # Checkout to the repository on the build machine
       name: Checkout 
       uses: actions/checkout@v4
@@ -27,6 +28,7 @@ jobs:
     - # Create a build kit builder instance
       name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2
+      
     - # Build the container image and push it to Docker \
       # Hub with the name sharesapptoken
       name: Build and push
