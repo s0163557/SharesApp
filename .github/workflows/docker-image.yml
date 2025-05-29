@@ -38,6 +38,4 @@ jobs:
           file: ./SharesApp.Server/Dockerfile
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/sharesappimage:latest
-          build-args: |
-            DATABASE_USER=${{ DATABASE_USER }}
-            DATABASE_PASSWORD=${{ DATABASE_PASSWORD }}
+
