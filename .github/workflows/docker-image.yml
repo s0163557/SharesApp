@@ -37,5 +37,5 @@ jobs:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/sharesappimage:latest
       env:
-          database_user: ${{DATABASE_USER}}
-          database_password: ${{DATABASE_PASSWORD}}
+        DATABASE_USER: ${{DATABASE_USER}}
+        DATABASE_PASSWORD: ${{DATABASE_PASSWORD}}
