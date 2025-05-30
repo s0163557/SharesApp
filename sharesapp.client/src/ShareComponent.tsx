@@ -9,12 +9,22 @@ function ShareComponent() {
     const [security, setSecurity] = useState<Security>();
 
     const [series, setSeries] = useState<Candlestics>();
+    const [dividends, setDividends] = useState<Dividend>();
+
+    interface Dividend
+    {
+        data:
+        {
+            x: Date,
+            y: number[]
+        }
+    }
 
     interface Candlestics {
         data: {
             x: Date,
             y: number[]
-        }[]
+        }
     }
 
     const toolTipBox = (y: number[]) => {
@@ -84,8 +94,66 @@ function ShareComponent() {
         );
     }
 
+    const DividendChart = () => {
+
+        const options: ApexOptions = {
+            chart: {
+                type: 'scatter',
+                height: 350,
+                zoom: {
+                    type: 'xy',
+                },
+            },
+            title: {
+                text: 'Scatter Chart',
+                align: 'left'
+            },
+            xaxis: {
+                type: 'datetime'
+            },
+            yaxis: {
+                tooltip: {
+                    enabled: true
+                }
+            },
+            tooltip: {
+                custom: function (opts) {
+                    const y =
+                        opts.ctx.w.config.series[opts.seriesIndex].data[opts.dataPointIndex]
+                            .y;
+                    return (
+                        toolTipBox(y)
+                    );
+                },
+            },
+        };
+
+        return (
+            dividends == undefined ?
+                <div>
+                    Loading chart
+                </div>
+                :
+                <div>
+                    <div id="chart">
+                        <ReactApexChart
+                            options={options}
+                            series={[dividends]}
+                            type="candlestick"
+                            height={350}
+                            width={800} />
+                        <button onClick={GetTradeRecordsInDays}>Month</button>
+                        <button onClick={GetTradeRecordsInWeeks}>Year</button>
+                        <button onClick={GetTradeRecordsInMonths}>All Records</button>
+                    </div>
+                    <div id="html-dist"></div>
+                </div>
+        );
+    }
+
     useEffect(() => {
         GetSecurity();
+        GetDividends();
         GetTradeRecordsInDays();
     }, []);
 
@@ -118,8 +186,11 @@ function ShareComponent() {
         )
     }
 
-    const chart =
+    const tradeRecordsChart =
         <ApexChart />
+
+    const dividendsChart =
+        <DividendChart />
 
     const securityContent = security == undefined ?
         <div>
@@ -132,7 +203,8 @@ function ShareComponent() {
                 {security.name}
             </h1>
 
-            {chart}
+            {tradeRecordsChart}
+            {dividendsChart}
 
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gridTemplateRows: '1fr 1fr 1fr', columnGap: 50, rowGap: 10 }}>
@@ -179,6 +251,12 @@ function ShareComponent() {
         const response = await fetch('/api/Security/GetSecurity/' + params.secid);
         const data = await response.json();
         setSecurity(data);
+    }
+
+    async function GetDividends() {
+        const response = await fetch('/api/Security/GetDividends/' + params.secid);
+        const data = await response.json();
+        setDividends(data);
     }
 }
 
