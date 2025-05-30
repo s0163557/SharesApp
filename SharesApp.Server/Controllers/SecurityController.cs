@@ -12,13 +12,62 @@ namespace SharesApp.Server.Controllers
     public class SecurityController : ControllerBase
     {
         [HttpGet]
-        [Route("GetSecurities")]
-        public List<SecurityInfo> GetListOfSecurities()
+        [Route("GetActiveSecurities")]
+        public List<SecurityInfo> GetActiveSecurities()
         {
             using (SecuritiesContext dbContext = new SecuritiesContext())
             {
-                dbContext.SecurityInfos.Load();
-                return dbContext.SecurityInfos.Select(x => x).ToList();
+                var tradeRecordsQuery = from tradeRecord in dbContext.SecurityTradeRecords
+                                        group tradeRecord by tradeRecord.SecurityInfoId into securityInfoGroup
+                                        select new SecurityTradeRecord
+                                        {
+                                            SecurityInfoId = securityInfoGroup.Key,
+                                            DateOfTrade = securityInfoGroup.Max(x => x.DateOfTrade),
+                                        };
+
+                var filteredRecords = from record in tradeRecordsQuery
+                                      where record.DateOfTrade.Month - 3 <= DateTime.Now.Month
+                                      join securityInfo in dbContext.SecurityInfos on record.SecurityInfoId equals securityInfo.SecurityInfoId
+                                      orderby securityInfo.SecurityInfoId
+                                      select new SecurityInfo
+                                      {
+                                          SecurityInfoId = securityInfo.SecurityInfoId,
+                                          SecurityId = securityInfo.SecurityId,
+                                          Isin = securityInfo.Isin,
+                                          Name = securityInfo.Name,
+                                      };
+
+                return filteredRecords.ToList();
+            }
+        }
+
+        [HttpGet]
+        [Route("GetInactiveSecurities")]
+        public List<SecurityInfo> GetInactiveSecurities()
+        {
+            using (SecuritiesContext dbContext = new SecuritiesContext())
+            {
+                var tradeRecordsQuery = from tradeRecord in dbContext.SecurityTradeRecords
+                                        group tradeRecord by tradeRecord.SecurityInfoId into securityInfoGroup
+                                        select new SecurityTradeRecord
+                                        {
+                                            SecurityInfoId = securityInfoGroup.Key,
+                                            DateOfTrade = securityInfoGroup.Max(x => x.DateOfTrade),
+                                        };
+
+                var filteredRecords = from record in tradeRecordsQuery
+                                      where record.DateOfTrade.Month - 3 >= DateTime.Now.Month
+                                      join securityInfo in dbContext.SecurityInfos on record.SecurityInfoId equals securityInfo.SecurityInfoId
+                                      orderby securityInfo.SecurityInfoId
+                                      select new SecurityInfo
+                                      {
+                                          SecurityInfoId = securityInfo.SecurityInfoId,
+                                          SecurityId = securityInfo.SecurityId,
+                                          Isin = securityInfo.Isin,
+                                          Name = securityInfo.Name,
+                                      };
+
+                return filteredRecords.ToList();
             }
         }
 
@@ -58,7 +107,6 @@ namespace SharesApp.Server.Controllers
                                       x = record.DateOfTrade,
                                       y = new List<double> { record.Open, record.High, record.Low, record.Close }
                                   };
-
 
                     return JsonConvert.SerializeObject(records, Formatting.Indented);
                 }

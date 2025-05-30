@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Win32;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
-using OpenQA.Selenium.Support.UI;
 using SharesApp.Server.Classes;
 using SharesApp.Server.Models;
 
@@ -80,7 +79,7 @@ namespace SharesApp.Server.Controllers
             using (SecuritiesContext securitiesContext = new SecuritiesContext())
             {
                 List<string> listOfSharesId = securitiesContext.SecurityInfos.Select(x => "_" + x.SecurityId).ToList();
-                for (int i = 0; i < 30; i++)
+                for (int i = 0; i < 25; i++)
                 {
                     var htmlText = await GetPageOfDividentsShare(i);
                     for (int shareCounter = 0; shareCounter < listOfSharesId.Count; shareCounter++)
@@ -96,7 +95,9 @@ namespace SharesApp.Server.Controllers
                                 indexOfShare--;
                             }
                             //Добавим соответствие между найденным название и записью об акции в бд
-                            shareNamesSecurityInfoDictionary.Add(sb.ToString(), securitiesContext.SecurityInfos.First(x => x.SecurityId == listOfSharesId[shareCounter]));
+                            var stringOfSb = sb.ToString();
+                            var ssecurityInfo = securitiesContext.SecurityInfos.First(x => x.SecurityId == listOfSharesId[shareCounter].Remove(0, 1));
+                            shareNamesSecurityInfoDictionary.Add(stringOfSb, ssecurityInfo);
 
                             //Удалим найденную акцию для ускорени поиска и избежания дублировани данных
                             listOfSharesId.RemoveAt(shareCounter);
@@ -118,7 +119,7 @@ namespace SharesApp.Server.Controllers
                 for (int shareCounter = 0; shareCounter < shareNamesSecurityInfoDictionary.Count; shareCounter++)
                 {
                     string dividentNameInBankRu = shareNamesSecurityInfoDictionary.Keys.ElementAt(shareCounter);
-                    var dividentsTableInhtml = await GetDividentsTableHtml(dividentNameInBankRu);
+                    var dividentsTableInhtml = GetDividentsTableHtml(dividentNameInBankRu);
                     //Нам пришел чистый html код таблицы, и чтобы 
                     var doc = new HtmlDocument();
                     doc.LoadHtml(dividentsTableInhtml);
@@ -202,20 +203,31 @@ namespace SharesApp.Server.Controllers
         }
 
         [HttpGet("GetDividentsTableHtml")]
-        private async Task<string> GetDividentsTableHtml(string sharesName = "EnelRossiya_ENRU")
+        public string GetDividentsTableHtml(string sharesName = "EnelRossiya_ENRU")
         {
             var options = new ChromeOptions();
             options.AddArgument("--headless");
-            using (var driver = new ChromeDriver(options))
+            options.AddArgument("--no-sandbox");
+            options.AddArgument("--disable-dev-shm-usage");
+            try
             {
-                driver.Navigate().GoToUrl($"https://www.banki.ru/investment/share/{sharesName}/dividends/");
-                var element = driver.FindElement(By.XPath("//span[@data-test='investment-dividends__show-all-link']"));
-                IJavaScriptExecutor js = driver;
-                js.ExecuteScript("arguments[0].click();", element);
+                using (var driver = new ChromeDriver(options))
+                {
+                    driver.Navigate().GoToUrl($"https://www.banki.ru/investment/share/{sharesName}/dividends/");
+                    var element = driver.FindElement(By.XPath("//span[@data-test='investment-dividends__show-all-link']"));
+                    IJavaScriptExecutor js = driver;
+                    js.ExecuteScript("arguments[0].click();", element);
 
-                var tableHtml = driver.FindElement(By.XPath("//table[@class='Table__sc-1n08tcd-0 rUIGk']")).GetAttribute("outerHTML");
+                    var tableHtml = driver.FindElement(By.XPath("//table[@class='Table__sc-1n08tcd-0 rUIGk']")).GetAttribute("outerHTML");
+                    driver.Quit();
 
-                return tableHtml;
+                    return tableHtml;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return string.Empty;
             }
         }
 

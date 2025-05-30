@@ -273,7 +273,7 @@ namespace Stock_Analysis_Web_App.Controllers
 
         [HttpGet]
         [Route("GatherDataByWeek")]
-        public async Task<string> GatherDataByWeek()
+        public string GatherDataByWeek()
         {
             using (SecuritiesContext dbContext = new SecuritiesContext())
             {
@@ -351,7 +351,7 @@ namespace Stock_Analysis_Web_App.Controllers
 
         [HttpGet]
         [Route("GatherDataByMonth")]
-        public async Task<string> GatherDataByMonth()
+        public string GatherDataByMonth()
         {
             try
             {
