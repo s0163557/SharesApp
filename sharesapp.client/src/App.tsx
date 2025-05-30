@@ -76,10 +76,10 @@ function App() {
 
     return (
         <div>
-            <h1 id="tableLabel">Table of shares traded in the current year</h1>
+            <h1 id="tableLabel">Table of shares traded in last 3 month</h1>
             {activeSecuritiesContents}
 
-            <h1 id="tableLabel">Table of shares without trades in current year</h1>
+            <h1 id="tableLabel">Table of shares without trades in last 3 month</h1>
             {inactiveSecuritiesContents}
         </div>
     );
@@ -87,13 +87,13 @@ function App() {
     async function fetchActiveSecuritiesData() {
         const response = await fetch("/api/Security/GetActiveSecurities");
         const data = await response.json();
-        setInactiveSecurities(data);
+        setActiveSecurities(data);
     }
 
     async function fetchInactiveSecuritiesData() {
         const response = await fetch("/api/Security/GetInactiveSecurities");
         const data = await response.json();
-        setActiveSecurities(data);
+        setInactiveSecurities(data);
     }
 }
 

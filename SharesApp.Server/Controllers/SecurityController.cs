@@ -108,7 +108,6 @@ namespace SharesApp.Server.Controllers
                                       y = new List<double> { record.Open, record.High, record.Low, record.Close }
                                   };
 
-
                     return JsonConvert.SerializeObject(records, Formatting.Indented);
                 }
                 catch (Exception ex)
