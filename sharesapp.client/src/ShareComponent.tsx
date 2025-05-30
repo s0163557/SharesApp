@@ -17,14 +17,14 @@ function ShareComponent() {
         {
             x: Date,
             y: number[]
-        }
+        }[]
     }
 
     interface Candlestics {
         data: {
             x: Date,
             y: number[]
-        }
+        }[]
     }
 
     const toolTipBox = (y: number[]) => {
