@@ -54,6 +54,7 @@ namespace SharesApp.Server.Controllers
             using SecuritiesContext securitiesContext = new SecuritiesContext();
             {
                 foreach (var dividend in dividendsToSave)
+                foreach (var dividend in dividendsToSave)
                 {
                     //Добавим запись только если нет аналогичной
                     if (!securitiesContext.SecurityDividends.Where(x =>
@@ -64,7 +65,11 @@ namespace SharesApp.Server.Controllers
                     x.DateOfPayment == dividend.DateOfPayment &&
                     x.SecurityInfo == dividend.SecurityInfo
                     ).Any())
+                    {
+                        if (securitiesContext.SecurityDividends.Any())
+                            dividend.SecurityDividendsId = securitiesContext.SecurityDividends.Last().SecurityDividendsId + 1;
                         securitiesContext.SecurityDividends.Add(dividend);
+                    }
                 }
 
                 return securitiesContext.SaveChanges();
@@ -139,7 +144,7 @@ namespace SharesApp.Server.Controllers
                             if (extractedDividends != null)
                                 SaveDividendsInDatabase(extractedDividends);
                         }
-                        catch (Exception ex) 
+                        catch (Exception ex)
                         {
                             Console.WriteLine("While processing table and saving it in database cath next error:" + ex.Message);
                         }
