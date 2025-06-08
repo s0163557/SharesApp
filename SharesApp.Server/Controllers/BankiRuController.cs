@@ -215,10 +215,17 @@ namespace SharesApp.Server.Controllers
                 using (var driver = new ChromeDriver(options))
                 {
                     driver.Navigate().GoToUrl($"https://www.banki.ru/investment/share/{sharesName}/dividends/");
-                    var element = driver.FindElement(By.XPath("//span[@data-test='investment-dividends__show-all-link']"));
-                    IJavaScriptExecutor js = driver;
-                    js.ExecuteScript("arguments[0].click();", element);
-
+                    try
+                    {
+                        var element = driver.FindElement(By.XPath("//span[@data-test='investment-dividends__show-all-link']"));
+                        IJavaScriptExecutor js = driver;
+                        js.ExecuteScript("arguments[0].click();", element);
+                    }
+                    catch (Exception ex)
+                    {
+                        //Некоторые страницы имеют совсем немного записей о дивидендах, поэтому там и нажимать ни на что не нужно - если элемент не нашелся, не беда, просто
+                        //запоминаем табилчку, как обычно, в укороченном варианте.
+                    }
                     var tableHtml = driver.FindElement(By.XPath("//table[@class='Table__sc-1n08tcd-0 rUIGk']")).GetAttribute("outerHTML");
                     driver.Quit();
 
