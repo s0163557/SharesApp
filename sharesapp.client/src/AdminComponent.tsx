@@ -39,6 +39,8 @@ function AdminComponent() {
             <button onClick={gatherDataByWeeks}>Form securities by weeks</button>
             <button onClick={gatherDataByMonths}>Form securities by months</button>
 
+            <h1>Scrap dividents</h1>
+
             <button onClick={gatherDividents}>Gather dividents</button>
         </div>
     );

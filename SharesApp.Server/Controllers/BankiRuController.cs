@@ -109,7 +109,8 @@ namespace SharesApp.Server.Controllers
             }
         }
 
-        [HttpPost("GetAndSaveDividentsInfo")]
+        [HttpGet]
+        [Route("GetAndSaveDividentsInfo")]
         public async Task<IResult> GetInfoFromDividendsPage()
         {
             try
