@@ -132,17 +132,20 @@ namespace SharesApp.Server.Controllers
 
                     if (specificTableNode != null)
                     {
-                        var extractedDividends = ExtractDividendsFromTable(specificTableNode, shareNamesSecurityInfoDictionary[dividentNameInBankRu]);
-                        //Если таки получилось выгрузить данные, то сохраним их
-                        if (extractedDividends != null)
-                            accordingDividends[shareCounter] = extractedDividends;
+                        try
+                        {
+                            var extractedDividends = ExtractDividendsFromTable(specificTableNode, shareNamesSecurityInfoDictionary[dividentNameInBankRu]);
+                            //Если таки получилось выгрузить данные, то сохраним их
+                            if (extractedDividends != null)
+                                SaveDividendsInDatabase(extractedDividends);
+                        }
+                        catch (Exception ex) 
+                        {
+                            Console.WriteLine("While processing table and saving it in database cath next error:" + ex.Message);
+                        }
                     }
                 }
-                List<SecurityDividend> allDividendsInOneList = new List<SecurityDividend>();
-                foreach (var dividendsList in accordingDividends)
-                    allDividendsInOneList.AddRange(dividendsList);
 
-                SaveDividendsInDatabase(allDividendsInOneList);
                 return Results.Accepted();
             }
             catch (Exception ex)
