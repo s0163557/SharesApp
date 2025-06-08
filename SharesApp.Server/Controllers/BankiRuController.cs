@@ -54,7 +54,6 @@ namespace SharesApp.Server.Controllers
             using SecuritiesContext securitiesContext = new SecuritiesContext();
             {
                 foreach (var dividend in dividendsToSave)
-                foreach (var dividend in dividendsToSave)
                 {
                     //Добавим запись только если нет аналогичной
                     if (!securitiesContext.SecurityDividends.Where(x =>
