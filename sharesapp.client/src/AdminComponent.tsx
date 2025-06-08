@@ -38,6 +38,8 @@ function AdminComponent() {
 
             <button onClick={gatherDataByWeeks}>Form securities by weeks</button>
             <button onClick={gatherDataByMonths}>Form securities by months</button>
+
+            <button onClick={gatherDividents}>Gather dividents</button>
         </div>
     );
 
@@ -61,9 +63,15 @@ function AdminComponent() {
         const response = await fetch(apiUrl);
         return response;       
     }
-
+    
     async function gatherDataByMonths() {
         const apiUrl = '/api/Moex/GatherDataByMonth';
+        const response = await fetch(apiUrl);
+        return response;
+    }
+
+    async function gatherDividents() {
+        const apiUrl = '/api/BankiRu/GetAndSaveDividentsInfo';
         const response = await fetch(apiUrl);
         return response;
     }
