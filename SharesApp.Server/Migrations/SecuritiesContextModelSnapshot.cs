@@ -55,7 +55,7 @@ namespace SharesApp.Server.Migrations
                 {
                     b.Property<int>("SecurityDividendId")
                         .HasColumnType("integer")
-                        .HasColumnName("security_dividends_id");
+                        .HasColumnName("security_dividend_id");
 
                     b.Property<DateOnly>("DateOfPayment")
                         .HasColumnType("date")

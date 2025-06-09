@@ -31,7 +31,8 @@ namespace SharesApp.Server.Migrations
                 name: "security_dividends",
                 columns: table => new
                 {
-                    security_dividends_id = table.Column<int>(type: "integer", nullable: false),
+                    security_dividend_id = table.Column<int>(type: "integer", nullable: false)
+                    .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     security_info_id = table.Column<int>(type: "integer", nullable: false),
                     registry = table.Column<DateOnly>(type: "date", nullable: true),
                     date_of_payment = table.Column<DateOnly>(type: "date", nullable: false),
@@ -41,7 +42,7 @@ namespace SharesApp.Server.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("security_dividend_pkey", x => x.security_dividends_id);
+                    table.PrimaryKey("security_dividend_pkey", x => x.security_dividend_id);
                     table.ForeignKey(
                         name: "FK_security_dividends_security_infos_security_info_id",
                         column: x => x.security_info_id,

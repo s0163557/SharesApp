@@ -57,7 +57,7 @@ public partial class SecuritiesContext : DbContext
 
             entity.Property(e => e.SecurityDividendId)
                 .ValueGeneratedNever()
-                .HasColumnName("security_dividends_id");
+                .HasColumnName("security_dividend_id");
             entity.Property(e => e.DateOfPayment).HasColumnName("date_of_payment");
             entity.Property(e => e.Dividend).HasColumnName("dividend");
             entity.Property(e => e.Income)

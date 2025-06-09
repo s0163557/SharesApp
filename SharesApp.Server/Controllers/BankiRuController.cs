@@ -53,6 +53,10 @@ namespace SharesApp.Server.Controllers
         {
             using SecuritiesContext securitiesContext = new SecuritiesContext();
             {
+                List<SecurityDividend> dividndsWithoutDuplicates = new List<SecurityDividend>();
+
+                int lastDividendId = securitiesContext.SecurityDividends.OrderBy(x => x.SecurityDividendId).Last().SecurityDividendId + 1;
+
                 foreach (var dividend in dividendsToSave)
                 {
                     //Добавим запись только если нет аналогичной
@@ -65,11 +69,16 @@ namespace SharesApp.Server.Controllers
                     x.SecurityInfo == dividend.SecurityInfo
                     ).Any())
                     {
-                        if (securitiesContext.SecurityDividends.Any())
-                            dividend.SecurityDividendId = securitiesContext.SecurityDividends.Last().SecurityDividendId + 1;
-                        securitiesContext.SecurityDividends.Add(dividend);
-                        securitiesContext.SaveChanges();
+                        dividndsWithoutDuplicates.Add(dividend);
                     }
+                }
+
+                foreach (var cleanDividend in dividndsWithoutDuplicates)
+                {
+                    cleanDividend.SecurityDividendId = lastDividendId;
+                    lastDividendId++;
+                    securitiesContext.SecurityDividends.Add(cleanDividend);
+                    securitiesContext.SaveChanges();
                 }
 
                 return securitiesContext.SaveChanges();
@@ -115,13 +124,29 @@ namespace SharesApp.Server.Controllers
         }
 
         [HttpGet]
+        [Route("Testmethod")]
+        public async void Testmethod()
+        {
+            var table = GetDividentsTableHtml();
+            var doc = new HtmlDocument();
+            doc.LoadHtml(table);
+            var specificTableNode = doc.DocumentNode.SelectSingleNode("//table[@class='Table__sc-1n08tcd-0 rUIGk']");
+            using (SecuritiesContext dbContext = new SecuritiesContext())
+            {
+                var extractedDividends = ExtractDividendsFromTable(specificTableNode, dbContext.SecurityInfos.Where(x => x.SecurityId == "ENRU").First());
+                SaveDividendsInDatabase(extractedDividends);
+            }
+        }
+
+
+        [HttpGet]
         [Route("GetAndSaveDividentsInfo")]
         public async Task<IResult> GetInfoFromDividendsPage()
         {
             try
             {
                 Dictionary<string, SecurityInfo> shareNamesSecurityInfoDictionary = await GetNamesOfShares();
-                    List<List<SecurityDividend>> accordingDividends = new List<List<SecurityDividend>>();
+                List<List<SecurityDividend>> accordingDividends = new List<List<SecurityDividend>>();
                 for (int shareCounter = 0; shareCounter < shareNamesSecurityInfoDictionary.Count; shareCounter++)
                 {
                     string dividentNameInBankRu = shareNamesSecurityInfoDictionary.Keys.ElementAt(shareCounter);
@@ -194,15 +219,15 @@ namespace SharesApp.Server.Controllers
                         if (decimal.TryParse(integerRegex.Replace(currentRowCells[4].InnerText.Trim(), ""), out decimal parsedIncome))
                             currentIncome = parsedIncome / 100;
 
-                        var dividend = new SecurityDividend
-                        {
-                            Registry = currentRegistry,
-                            DateOfPayment = currentDateOfPayment,
-                            Period = currentPeriod,
-                            Dividend = currentDividend,
-                            Income = currentIncome,
-                            SecurityInfo = attachedSecurityInfo,
-                        };
+                        var dividend = new SecurityDividend();
+
+                        dividend.Registry = currentRegistry;
+                        dividend.DateOfPayment = currentDateOfPayment;
+                        dividend.Period = currentPeriod;
+                        dividend.Dividend = currentDividend;
+                        dividend.Income = currentIncome;
+                        dividend.SecurityInfoId = attachedSecurityInfo.SecurityInfoId;
+
 
                         dividends.Add(dividend);
                     }
