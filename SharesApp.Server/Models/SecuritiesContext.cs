@@ -51,11 +51,11 @@ public partial class SecuritiesContext : DbContext
 
         modelBuilder.Entity<SecurityDividend>(entity =>
         {
-            entity.HasKey(e => e.SecurityDividendsId).HasName("security_dividend_pkey");
+            entity.HasKey(e => e.SecurityDividendId).HasName("security_dividend_pkey");
 
             entity.ToTable("security_dividends");
 
-            entity.Property(e => e.SecurityDividendsId)
+            entity.Property(e => e.SecurityDividendId)
                 .ValueGeneratedNever()
                 .HasColumnName("security_dividends_id");
             entity.Property(e => e.DateOfPayment).HasColumnName("date_of_payment");

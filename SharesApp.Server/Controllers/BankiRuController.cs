@@ -66,8 +66,9 @@ namespace SharesApp.Server.Controllers
                     ).Any())
                     {
                         if (securitiesContext.SecurityDividends.Any())
-                            dividend.SecurityDividendsId = securitiesContext.SecurityDividends.Last().SecurityDividendsId + 1;
+                            dividend.SecurityDividendId = securitiesContext.SecurityDividends.Last().SecurityDividendId + 1;
                         securitiesContext.SecurityDividends.Add(dividend);
+                        securitiesContext.SaveChanges();
                     }
                 }
 
@@ -120,7 +121,7 @@ namespace SharesApp.Server.Controllers
             try
             {
                 Dictionary<string, SecurityInfo> shareNamesSecurityInfoDictionary = await GetNamesOfShares();
-                List<List<SecurityDividend>> accordingDividends = new List<List<SecurityDividend>>();
+                    List<List<SecurityDividend>> accordingDividends = new List<List<SecurityDividend>>();
                 for (int shareCounter = 0; shareCounter < shareNamesSecurityInfoDictionary.Count; shareCounter++)
                 {
                     string dividentNameInBankRu = shareNamesSecurityInfoDictionary.Keys.ElementAt(shareCounter);

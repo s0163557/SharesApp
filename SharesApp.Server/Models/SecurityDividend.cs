@@ -5,7 +5,7 @@ namespace SharesApp.Server.Models;
 
 public partial class SecurityDividend
 {
-    public int SecurityDividendsId { get; set; }
+    public int SecurityDividendId { get; set; }
 
     public int SecurityInfoId { get; set; }
 
