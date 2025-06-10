@@ -16,7 +16,7 @@ function ShareComponent() {
         data:
         {
             x: Date,
-            y: number[]
+            y: number
         }[]
     }
 

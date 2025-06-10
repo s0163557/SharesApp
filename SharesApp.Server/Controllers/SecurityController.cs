@@ -147,6 +147,33 @@ namespace SharesApp.Server.Controllers
         }
 
         [HttpGet]
+        [Route("GetSecurityDividends/{securityid}")]
+        public string GetSecurityDividends(string securityid)
+        {
+            using (SecuritiesContext dbContext = new SecuritiesContext())
+            {
+                try
+                {
+                    List<SecurityDividend> securityDividends = dbContext.SecurityDividends.Where(x =>
+                    x.SecurityInfo.SecurityId == securityid).ToList();
+
+                    var dividends = from dividend in securityDividends
+                                    select new
+                                    {
+                                        x = dividend.DateOfPayment,
+                                        y = dividend.Dividend
+                                    };
+
+                    return JsonConvert.SerializeObject(dividends, Formatting.Indented);
+                }
+                catch (Exception ex)
+                {
+                    return "";
+                }
+            }
+        }
+
+        [HttpGet]
         [Route("GetSecurityTradeRecordsByWeek/{securityid}")]
         public string GetSecurityTradeRecordsByWeek(string securityid)
         {

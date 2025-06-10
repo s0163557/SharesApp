@@ -22,7 +22,7 @@ internal class Program
         builder.Services.AddSingleton<MoexHttpClient>();
         builder.Services.AddSingleton<BankiRuHttpClient>();
         builder.Services.AddSingleton<ChromeDriverFactory>();
-        builder.Services.AddSingleton<ChromeDriver>(provider =>
+        builder.Services.AddTransient<ChromeDriver>(provider =>
         { 
             var factory = new ChromeDriverFactory();
             return factory.CreateDriver();
