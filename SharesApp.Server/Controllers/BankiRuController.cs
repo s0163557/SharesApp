@@ -18,20 +18,19 @@ namespace SharesApp.Server.Controllers
     public class BankiRuController
     {
         ChromeDriverFactory _chromeDriverFactory;
-        public BankiRuController(ChromeDriverFactory chromeDriverFactory)
+        BankiRuHttpClient _httpClient;
+        public BankiRuController(ChromeDriverFactory chromeDriverFactory, BankiRuHttpClient bankiRuHttpClient)
         {
             _chromeDriverFactory = chromeDriverFactory;
+            _httpClient = bankiRuHttpClient;
         }
 
         [HttpGet("GetPageOfDividentsShare")]
         private async Task<string> GetPageOfDividentsShare(int pageNumber)
         {
-            using (BankiRuHttpClient httpClient = new BankiRuHttpClient())
-            {
-                var response = await httpClient.GetAsync($"investment/shares/russian_shares/most-profit/?page={pageNumber}");
-                var htmlText = await response.Content.ReadAsStringAsync();
-                return htmlText;
-            }
+            var response = await _httpClient.GetAsync($"investment/shares/russian_shares/most-profit/?page={pageNumber}");
+            var htmlText = await response.Content.ReadAsStringAsync();
+            return htmlText;
         }
 
         [HttpPost("SaveDividendInDatabase")]
