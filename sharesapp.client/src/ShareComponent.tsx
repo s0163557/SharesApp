@@ -11,8 +11,7 @@ function ShareComponent() {
     const [series, setSeries] = useState<Candlestics>();
     const [dividends, setDividends] = useState<Dividend>();
 
-    interface Dividend
-    {
+    interface Dividend {
         data:
         {
             x: Date,
@@ -103,13 +102,22 @@ function ShareComponent() {
                 zoom: {
                     type: 'xy',
                 },
+
             },
             title: {
-                text: 'Scatter Chart',
+                text: 'Dividends chart',
                 align: 'left'
             },
             xaxis: {
-                type: 'datetime'
+                type: 'datetime',
+                labels: {
+                    formatter: function (value) {
+                        return new Date(value).toLocaleDateString();
+                    }
+                },
+                tooltip: {
+                    enabled: true
+                }
             },
             yaxis: {
                 tooltip: {
@@ -117,15 +125,12 @@ function ShareComponent() {
                 }
             },
             tooltip: {
-                custom: function (opts) {
-                    const y =
-                        opts.ctx.w.config.series[opts.seriesIndex].data[opts.dataPointIndex]
-                            .y;
+                custom: function () {
                     return (
-                        toolTipBox(y)
+                        document.createElement('div')
                     );
                 },
-            },
+            }
         };
 
         return (
@@ -139,12 +144,9 @@ function ShareComponent() {
                         <ReactApexChart
                             options={options}
                             series={[dividends]}
-                            type="candlestick"
+                            type="scatter"
                             height={350}
                             width={800} />
-                        <button onClick={GetTradeRecordsInDays}>Month</button>
-                        <button onClick={GetTradeRecordsInWeeks}>Year</button>
-                        <button onClick={GetTradeRecordsInMonths}>All Records</button>
                     </div>
                     <div id="html-dist"></div>
                 </div>
@@ -254,9 +256,10 @@ function ShareComponent() {
     }
 
     async function GetDividends() {
-        const response = await fetch('/api/Security/GetDividends/' + params.secid);
+        const response = await fetch('/api/Security/GetSecurityDividends/' + params.secid);
         const data = await response.json();
-        setDividends(data);
+        const correctformat = { data: data }
+        setDividends(correctformat);
     }
 }
 

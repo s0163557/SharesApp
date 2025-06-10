@@ -9,6 +9,7 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using SharesApp.Server.Classes;
 using SharesApp.Server.Models;
+using SharesApp.Server.Tools;
 
 namespace SharesApp.Server.Controllers
 {
@@ -16,10 +17,10 @@ namespace SharesApp.Server.Controllers
     [Route("api/[controller]")]
     public class BankiRuController
     {
-        private ChromeDriver _driver;
-        public BankiRuController(ChromeDriver driver)
+        ChromeDriverFactory _chromeDriverFactory;
+        public BankiRuController(ChromeDriverFactory chromeDriverFactory)
         {
-            _driver = driver;
+            _chromeDriverFactory = chromeDriverFactory;
         }
 
         [HttpGet("GetPageOfDividentsShare")]
@@ -251,21 +252,25 @@ namespace SharesApp.Server.Controllers
         {
             try
             {
-                _driver.Navigate().GoToUrl($"https://www.banki.ru/investment/share/{sharesName}/dividends/");
-                try
+                using (var driver = _chromeDriverFactory.CreateDriver())
                 {
-                    var element = _driver.FindElement(By.XPath("//span[@data-test='investment-dividends__show-all-link']"));
-                    IJavaScriptExecutor js = _driver;
-                    js.ExecuteScript("arguments[0].click();", element);
-                }
-                catch (Exception ex)
-                {
-                    //Некоторые страницы имеют совсем немного записей о дивидендах, поэтому там и нажимать ни на что не нужно - если элемент не нашелся, не беда, просто
-                    //запоминаем табилчку, как обычно, в укороченном варианте.
-                }
-                var tableHtml = _driver.FindElement(By.XPath("//table[@class='Table__sc-1n08tcd-0 rUIGk']")).GetAttribute("outerHTML");
+                    driver.Navigate().GoToUrl($"https://www.banki.ru/investment/share/{sharesName}/dividends/");
+                    try
+                    {
+                        var element = driver.FindElement(By.XPath("//span[@data-test='investment-dividends__show-all-link']"));
+                        IJavaScriptExecutor js = driver;
+                        js.ExecuteScript("arguments[0].click();", element);
+                    }
+                    catch (Exception ex)
+                    {
+                        //Некоторые страницы имеют совсем немного записей о дивидендах, поэтому там и нажимать ни на что не нужно - если элемент не нашелся, не беда, просто
+                        //запоминаем табилчку, как обычно, в укороченном варианте.
+                    }
+                    var tableHtml = driver.FindElement(By.XPath("//table[@class='Table__sc-1n08tcd-0 rUIGk']")).GetAttribute("outerHTML");
 
-                return tableHtml;
+                    driver.Quit();
+                    return tableHtml;
+                }
             }
             catch (Exception ex)
             {

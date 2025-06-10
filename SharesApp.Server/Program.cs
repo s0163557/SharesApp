@@ -22,11 +22,6 @@ internal class Program
         builder.Services.AddSingleton<MoexHttpClient>();
         builder.Services.AddSingleton<BankiRuHttpClient>();
         builder.Services.AddSingleton<ChromeDriverFactory>();
-        builder.Services.AddTransient<ChromeDriver>(provider =>
-        { 
-            var factory = new ChromeDriverFactory();
-            return factory.CreateDriver();
-        });
         builder.Services.AddTransient<SecuritiesContext>();
         builder.Services.AddHostedService<FetchingDataService>();
 

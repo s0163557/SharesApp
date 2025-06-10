@@ -160,8 +160,8 @@ namespace SharesApp.Server.Controllers
                     var dividends = from dividend in securityDividends
                                     select new
                                     {
-                                        x = dividend.DateOfPayment,
-                                        y = dividend.Dividend
+                                        x = dividend.Registry,
+                                        y = new List<double> { dividend.Dividend }
                                     };
 
                     return JsonConvert.SerializeObject(dividends, Formatting.Indented);
