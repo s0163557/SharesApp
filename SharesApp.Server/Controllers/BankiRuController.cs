@@ -16,6 +16,12 @@ namespace SharesApp.Server.Controllers
     [Route("api/[controller]")]
     public class BankiRuController
     {
+        private ChromeDriver _driver;
+        public BankiRuController(ChromeDriver driver)
+        {
+            _driver = driver;
+        }
+
         [HttpGet("GetPageOfDividentsShare")]
         private async Task<string> GetPageOfDividentsShare(int pageNumber)
         {
@@ -55,7 +61,11 @@ namespace SharesApp.Server.Controllers
             {
                 List<SecurityDividend> dividndsWithoutDuplicates = new List<SecurityDividend>();
 
-                int lastDividendId = securitiesContext.SecurityDividends.OrderBy(x => x.SecurityDividendId).Last().SecurityDividendId + 1;
+                var list = securitiesContext.SecurityDividends.OrderBy(x => x.SecurityDividendId).ToList();
+                int lastDividendId = 0;
+
+                if (list.Any())
+                    lastDividendId = list.Last().SecurityDividendId + 1;
 
                 foreach (var dividend in dividendsToSave)
                 {
@@ -66,8 +76,8 @@ namespace SharesApp.Server.Controllers
                     x.Period == dividend.Period &&
                     x.Registry == dividend.Registry &&
                     x.DateOfPayment == dividend.DateOfPayment &&
-                    x.SecurityInfo == dividend.SecurityInfo
-                    ).Any())
+                    x.SecurityInfoId == dividend.SecurityInfoId
+                    ).ToList().Any())
                     {
                         dividndsWithoutDuplicates.Add(dividend);
                     }
@@ -191,7 +201,7 @@ namespace SharesApp.Server.Controllers
             var tableBody = tableNode.SelectSingleNode("tbody");
             var rows = tableBody.SelectNodes("tr");
 
-            Regex integerRegex = new Regex("[^0-9.,]");
+            Regex integerRegex = new Regex(@"[^0-9/.,]");
 
             if (rows != null)
                 foreach (var row in rows)
@@ -239,31 +249,23 @@ namespace SharesApp.Server.Controllers
         [HttpGet("GetDividentsTableHtml")]
         public string GetDividentsTableHtml(string sharesName = "EnelRossiya_ENRU")
         {
-            var options = new ChromeOptions();
-            options.AddArgument("--headless");
-            options.AddArgument("--no-sandbox");
-            options.AddArgument("--disable-dev-shm-usage");
             try
             {
-                using (var driver = new ChromeDriver(options))
+                _driver.Navigate().GoToUrl($"https://www.banki.ru/investment/share/{sharesName}/dividends/");
+                try
                 {
-                    driver.Navigate().GoToUrl($"https://www.banki.ru/investment/share/{sharesName}/dividends/");
-                    try
-                    {
-                        var element = driver.FindElement(By.XPath("//span[@data-test='investment-dividends__show-all-link']"));
-                        IJavaScriptExecutor js = driver;
-                        js.ExecuteScript("arguments[0].click();", element);
-                    }
-                    catch (Exception ex)
-                    {
-                        //Некоторые страницы имеют совсем немного записей о дивидендах, поэтому там и нажимать ни на что не нужно - если элемент не нашелся, не беда, просто
-                        //запоминаем табилчку, как обычно, в укороченном варианте.
-                    }
-                    var tableHtml = driver.FindElement(By.XPath("//table[@class='Table__sc-1n08tcd-0 rUIGk']")).GetAttribute("outerHTML");
-                    driver.Quit();
-
-                    return tableHtml;
+                    var element = _driver.FindElement(By.XPath("//span[@data-test='investment-dividends__show-all-link']"));
+                    IJavaScriptExecutor js = _driver;
+                    js.ExecuteScript("arguments[0].click();", element);
                 }
+                catch (Exception ex)
+                {
+                    //Некоторые страницы имеют совсем немного записей о дивидендах, поэтому там и нажимать ни на что не нужно - если элемент не нашелся, не беда, просто
+                    //запоминаем табилчку, как обычно, в укороченном варианте.
+                }
+                var tableHtml = _driver.FindElement(By.XPath("//table[@class='Table__sc-1n08tcd-0 rUIGk']")).GetAttribute("outerHTML");
+
+                return tableHtml;
             }
             catch (Exception ex)
             {

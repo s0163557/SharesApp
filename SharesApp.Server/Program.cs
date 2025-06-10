@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Builder;
+using OpenQA.Selenium.Chrome;
 using SharesApp.Server.Classes;
 using SharesApp.Server.Models;
 using SharesApp.Server.Services;
@@ -20,6 +21,12 @@ internal class Program
         builder.Services.AddSwaggerGen();
         builder.Services.AddSingleton<MoexHttpClient>();
         builder.Services.AddSingleton<BankiRuHttpClient>();
+        builder.Services.AddSingleton<ChromeDriverFactory>();
+        builder.Services.AddSingleton<ChromeDriver>(provider =>
+        { 
+            var factory = new ChromeDriverFactory();
+            return factory.CreateDriver();
+        });
         builder.Services.AddTransient<SecuritiesContext>();
         builder.Services.AddHostedService<FetchingDataService>();
 
