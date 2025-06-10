@@ -17,7 +17,7 @@ namespace SharesApp.Server.Services
                 //Найдем добавленную акцию по её ID
                 SecurityInfo securityInfo = dbContext.SecurityInfos.Where(x => x.SecurityId == secId).FirstOrDefault();
                 //получим последнюю неделю
-                SecurityTradeRecordsByWeek tradeRecordByWeek = dbContext.SecurityTradeRecordsByWeeks.Where(x => x.SecurityInfo == securityInfo).Last();
+                SecurityTradeRecordsByWeek tradeRecordByWeek = dbContext.SecurityTradeRecordsByWeeks.Where(x => x.SecurityInfo == securityInfo).OrderBy(x => x.SecurityTradeRecordId).Last();
                 //Будем добавлять недели пока не перескочим текущую дату
                 DateOnly currentWeekDateStart = tradeRecordByWeek.DateOfTrade;
                 var dateTimeNow = DateOnly.FromDateTime(DateTime.Now);
@@ -56,7 +56,7 @@ namespace SharesApp.Server.Services
                 //Найдем добавленную акцию по её ID
                 SecurityInfo securityInfo = dbContext.SecurityInfos.Where(x => x.SecurityId == secId).FirstOrDefault();
                 //получим последнюю неделю
-                SecurityTradeRecordsByMonth tradeRecordByMonth = dbContext.SecurityTradeRecordsByMonths.Where(x => x.SecurityInfo == securityInfo).Last();
+                SecurityTradeRecordsByMonth tradeRecordByMonth = dbContext.SecurityTradeRecordsByMonths.Where(x => x.SecurityInfo == securityInfo).OrderBy(x => x.SecurityTradeRecordId).Last();
                 //Будем добавлять недели пока не перескочим текущую дату
                 var dateTimeNow = DateOnly.FromDateTime(DateTime.Now);
                 DateOnly currentMonthDateStart = tradeRecordByMonth.DateOfTrade;

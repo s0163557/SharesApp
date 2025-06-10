@@ -156,11 +156,13 @@ namespace SharesApp.Server.Controllers
             try
             {
                 Dictionary<string, SecurityInfo> shareNamesSecurityInfoDictionary = await GetNamesOfShares();
+                Console.WriteLine("Extract names");
                 List<List<SecurityDividend>> accordingDividends = new List<List<SecurityDividend>>();
                 for (int shareCounter = 0; shareCounter < shareNamesSecurityInfoDictionary.Count; shareCounter++)
                 {
                     string dividentNameInBankRu = shareNamesSecurityInfoDictionary.Keys.ElementAt(shareCounter);
                     var dividentsTableInhtml = GetDividentsTableHtml(dividentNameInBankRu);
+                    Console.WriteLine("Extract " + dividentNameInBankRu + " html table");
                     //Нам пришел чистый html код таблицы, и чтобы 
                     var doc = new HtmlDocument();
                     doc.LoadHtml(dividentsTableInhtml);
@@ -175,9 +177,13 @@ namespace SharesApp.Server.Controllers
                         try
                         {
                             var extractedDividends = ExtractDividendsFromTable(specificTableNode, shareNamesSecurityInfoDictionary[dividentNameInBankRu]);
+                            Console.WriteLine("Extract dividends from html table");
                             //Если таки получилось выгрузить данные, то сохраним их
                             if (extractedDividends != null)
+                            {
                                 SaveDividendsInDatabase(extractedDividends);
+                                Console.WriteLine("Successfuly saved dividends in database");
+                            }
                         }
                         catch (Exception ex)
                         {
@@ -222,7 +228,7 @@ namespace SharesApp.Server.Controllers
                             currentPeriod = new DateOnly(parsedPeriod, 1, 1);
 
                         double currentDividend = -1;
-                        if (double.TryParse(integerRegex.Replace(currentRowCells[3].InnerText.Trim(), "").Replace(',', '.'), out double parsedDividend))
+                        if (double.TryParse(integerRegex.Replace(currentRowCells[3].InnerText.Trim(), ""), out double parsedDividend))
                             currentDividend = parsedDividend;
 
                         decimal currentIncome = -1;
